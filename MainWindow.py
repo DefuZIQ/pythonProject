@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QMainWindow
 from PyQt5 import uic
 from AuthWindow import AuthWindow
 import json
-from pathlib import Path
+import os
 from datetime import datetime, date
 from tkinter import filedialog
 from openpyxl import load_workbook
@@ -10,19 +10,18 @@ import pandas as pd
 from dateutil.relativedelta import relativedelta
 
 
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         uic.loadUi('main.ui', self)
         self.action_2.triggered.connect(self.create_window)
-        self.pushButton.clicked.connect(self.upload_excel1)
+        self.pushButton.clicked.connect(self.upload_excel)
         self.pushButton_2.clicked.connect(self.upload_excel2)
         self.pushButton_3.clicked.connect(self.upload_excel3)
         self.pushButton_4.clicked.connect(self.upload_excel4)
         self.pushButton_5.clicked.connect(self.upload_excel5)
         self.pushButton_6.clicked.connect(self.upload_excel6)
-        self.pushButton_7.clicked.connect(self.upload_excel6)
+        self.pushButton_7.clicked.connect(self.upload_excel7)
         self.start_1.clicked.connect(self.start_app1)
         self.start_2.clicked.connect(self.start_app2)
         self.start_3.clicked.connect(self.start_app3)
@@ -33,84 +32,73 @@ class MainWindow(QMainWindow):
         self.start_8.clicked.connect(self.start_app8)
 
     def create_window(self):
-        self.exit_window()
-        self.window = AuthWindow(self)
-        self.window.show()
+        window = AuthWindow(self)
+        window.show()
 
-    def exit_window(self):
-        AuthWindow(self).close()
+    def save_log(self, text):
+        self.logs.setReadOnly(False)
+        self.logs.appendPlainText(text)
+        self.logs.setReadOnly(True)
 
-
-    def pathfile(self, label):
+    def path_file(self, label, label2=None, label3=None):
         filetypes = (("Excel", "*.xlsx"), ("Excel", "*.xls"), ("Excel", "*.xlsm"), ("csv", "*.csv"), ("txt", "*.txt"))
-        path = filedialog.askopenfilename(title="Выбрать файлы", initialdir="", filetypes=filetypes)
-        label.setText(path)
-        print(path)
+        path = filedialog.askopenfilename(title="Выбрать файл", initialdir="", filetypes=filetypes)
+        file_name = os.path.basename(path)
+        self.logs.clear()
+        if path == "":
+            print(1)
+            self.save_log(text="Вы не выбрали файл")
+            label.setText("")
+            if label2 is None:
+                pass
+            else:
+                label2.setText("")
+                label3.setText("")
+        else:
+            label.setText(path)
+            self.save_log(text="Вы выбрали файл: " + file_name)
         return path
 
-    def upload_excel1(self):
-        path = self.pathfile(self.label_10)
+    def open_excel(self, label, label2=None, label3=None):
+        path = self.path_file(label, label2=None, label3=None)
         if path == "":
-            "Вы не выбрали файл"
+            return
         else:
             wb = load_workbook(path)
             sheets = wb.sheetnames
             sheet_row = []
             for sheet in sheets:
-                sheet = wb[sheet]
-                sheet_row.append(sheet.max_row)
-                print(sheet.max_row)
-            print(sheet_row)
-            self.label_11.setText(str(sheets))
-            self.label_12.setText(str(sheet_row))
+                df = pd.read_excel(io=path, sheet_name=sheet, header=None)
+                count_columns = len(df.axes[1])
+                array = []
+                for i in range(count_columns):
+                    count_rows = df[df.columns[i]].count()
+                    array.append({i: count_rows})
+                sheet_row.append({sheet: array})
+            label2.setText(str(sheets))
+            label3.setText(str(sheet_row))
+
+    def upload_excel(self):
+        self.open_excel(label=self.label_9, label2=self.label_10, label3=self.label_11)
 
     def upload_excel2(self):
-        wb = load_workbook(self.pathfile(self.label_20))
-        sheets = wb.sheetnames
-        print(sheets)
-        sheets = wb.sheetnames
-        sheet_row = []
-        for sheet in sheets:
-            sheet = wb[sheet]
-            sheet_row.append(sheet.max_row)
-            print(sheet.max_row)
-        print(sheet_row)
-        self.label_21.setText(str(sheets))
-        self.label_22.setText(str(sheet_row))
+        self.open_excel(label=self.label_20, label2=self.label_21, label3=self.label_22)
 
     def upload_excel3(self):
-        wb = load_workbook(self.pathfile(self.label_23))
-        sheets = wb.sheetnames
-        print(sheets)
-        sheets = wb.sheetnames
-        sheet_row = []
-        for sheet in sheets:
-            sheet = wb[sheet]
-            sheet_row.append(sheet.max_row)
-            print(sheet.max_row)
-        print(sheet_row)
-        self.label_24.setText(str(sheets))
-        self.label_25.setText(str(sheet_row))
+        self.open_excel(label=self.label_31, label2=self.label_32, label3=self.label_33)
 
     def upload_excel4(self):
-        wb = load_workbook(self.pathfile(self.label_28))
-        sheets = wb.sheetnames
-        print(sheets)
-        sheets = wb.sheetnames
-        sheet_row = []
-        for sheet in sheets:
-            sheet = wb[sheet]
-            sheet_row.append(sheet.max_row)
-            print(sheet.max_row)
-        print(sheet_row)
-        self.label_27.setText(str(sheets))
-        self.label_26.setText(str(sheet_row))
+        self.open_excel(label=self.label_40, label2=self.label_41, label3=self.label_42)
 
     def upload_excel5(self):
-        self.pathfiles(self.label_6)
+        self.path_file(self.label_44)
 
     def upload_excel6(self):
-        self.pathfiles(self.label_29)
+        self.path_file(self.label_46)
+
+    def upload_excel7(self):
+        self.path_file(self.label_48)
+
 
     def show_data1(self):
         print(self.lineEdit.text())

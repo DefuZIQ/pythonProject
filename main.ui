@@ -2,12 +2,15 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>900</width>
-    <height>600</height>
+    <height>651</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,17 +22,21 @@
   <property name="minimumSize">
    <size>
     <width>900</width>
-    <height>600</height>
+    <height>651</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>900</width>
-    <height>600</height>
+    <height>651</height>
    </size>
   </property>
   <property name="windowTitle">
    <string>Преобразователь</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>static/images/icon.png</normaloff>static/images/icon.png</iconset>
   </property>
   <property name="animated">
    <bool>false</bool>
@@ -44,7 +51,13 @@
    <property name="minimumSize">
     <size>
      <width>900</width>
-     <height>600</height>
+     <height>651</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>900</width>
+     <height>651</height>
     </size>
    </property>
    <property name="layoutDirection">
@@ -56,10 +69,10 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>10</x>
+      <x>0</x>
       <y>0</y>
-      <width>885</width>
-      <height>580</height>
+      <width>900</width>
+      <height>650</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -70,8 +83,14 @@
     </property>
     <property name="minimumSize">
      <size>
-      <width>885</width>
-      <height>580</height>
+      <width>900</width>
+      <height>650</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>900</width>
+      <height>650</height>
      </size>
     </property>
     <property name="mouseTracking">
@@ -95,6 +114,10 @@
     <property name="autoFillBackground">
      <bool>false</bool>
     </property>
+    <property name="styleSheet">
+     <string notr="true">border: 0px;
+background-color: rgb(255, 255, 255);</string>
+    </property>
     <property name="tabShape">
      <enum>QTabWidget::Triangular</enum>
     </property>
@@ -107,14 +130,23 @@
       <height>20</height>
      </size>
     </property>
+    <property name="elideMode">
+     <enum>Qt::ElideNone</enum>
+    </property>
     <property name="tabBarAutoHide">
      <bool>false</bool>
     </property>
     <widget class="QWidget" name="tab">
      <property name="minimumSize">
       <size>
-       <width>835</width>
-       <height>520</height>
+       <width>900</width>
+       <height>550</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>900</width>
+       <height>600</height>
       </size>
      </property>
      <attribute name="title">
@@ -167,7 +199,13 @@
          </widget>
         </item>
         <item row="6" column="1">
-         <widget class="QLineEdit" name="lineEdit_3"/>
+         <widget class="QLineEdit" name="lineEdit_3">
+          <property name="styleSheet">
+           <string notr="true">border: 1px solid black;
+box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5), 
+           inset 10px 10px 15px rgba(70, 70, 70, 0.12);</string>
+          </property>
+         </widget>
         </item>
         <item row="3" column="0">
          <widget class="QLabel" name="label_3">
@@ -179,12 +217,8 @@
         <item row="0" column="0" colspan="2">
          <widget class="QPushButton" name="pushButton">
           <property name="styleSheet">
-           <string notr="true">QPushButton {
-	border: solid,
-	font-family: Rubik;
-	font-size: 16pt;
-	font-weight: 600;
-}</string>
+           <string notr="true">background-color: rgb(186, 186, 186);
+border: 4px solid rgb(186, 186, 186);</string>
           </property>
           <property name="text">
            <string>Выбрать файл</string>
@@ -199,7 +233,13 @@
          </widget>
         </item>
         <item row="8" column="1">
-         <widget class="QLineEdit" name="lineEdit_5"/>
+         <widget class="QLineEdit" name="lineEdit_5">
+          <property name="styleSheet">
+           <string notr="true">border: 1px solid black;
+box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5), 
+           inset 10px 10px 15px rgba(70, 70, 70, 0.12);</string>
+          </property>
+         </widget>
         </item>
         <item row="9" column="1">
          <widget class="QCheckBox" name="checkBox">
@@ -209,10 +249,29 @@
          </widget>
         </item>
         <item row="7" column="1">
-         <widget class="QLineEdit" name="lineEdit_4"/>
+         <widget class="QLineEdit" name="lineEdit_4">
+          <property name="styleSheet">
+           <string notr="true">border: 1px solid black;
+box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5), 
+           inset 10px 10px 15px rgba(70, 70, 70, 0.12);</string>
+          </property>
+         </widget>
         </item>
         <item row="4" column="1">
-         <widget class="QLineEdit" name="lineEdit"/>
+         <widget class="QLineEdit" name="lineEdit">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">border: 1px solid black;
+box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5), 
+           inset 10px 10px 15px rgba(70, 70, 70, 0.12);
+</string>
+          </property>
+         </widget>
         </item>
         <item row="3" column="1">
          <widget class="QLabel" name="label_12">
@@ -236,7 +295,13 @@
          </widget>
         </item>
         <item row="5" column="1">
-         <widget class="QLineEdit" name="lineEdit_2"/>
+         <widget class="QLineEdit" name="lineEdit_2">
+          <property name="styleSheet">
+           <string notr="true">border: 1px solid black;
+box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5), 
+           inset 10px 10px 15px rgba(70, 70, 70, 0.12);</string>
+          </property>
+         </widget>
         </item>
         <item row="6" column="0">
          <widget class="QLabel" name="label_6">
@@ -247,6 +312,12 @@
         </item>
         <item row="2" column="1">
          <widget class="QLabel" name="label_11">
+          <property name="contextMenuPolicy">
+           <enum>Qt::DefaultContextMenu</enum>
+          </property>
+          <property name="acceptDrops">
+           <bool>false</bool>
+          </property>
           <property name="text">
            <string/>
           </property>
@@ -269,6 +340,10 @@
       </item>
       <item>
        <widget class="QPushButton" name="start_1">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(186, 186, 186);
+border: 4px solid rgb(186, 186, 186);</string>
+        </property>
         <property name="text">
          <string>Начать</string>
         </property>
@@ -277,6 +352,18 @@
      </layout>
     </widget>
     <widget class="QWidget" name="tab_2">
+     <property name="minimumSize">
+      <size>
+       <width>900</width>
+       <height>600</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>900</width>
+       <height>600</height>
+      </size>
+     </property>
      <attribute name="title">
       <string>Скидка(Пользователи)</string>
      </attribute>
@@ -291,7 +378,14 @@
          </widget>
         </item>
         <item row="6" column="1">
-         <widget class="QLineEdit" name="lineEdit_8"/>
+         <widget class="QLineEdit" name="lineEdit_8">
+          <property name="styleSheet">
+           <string notr="true">border: 1px solid black;
+box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5), 
+           inset 10px 10px 15px rgba(70, 70, 70, 0.12);
+</string>
+          </property>
+         </widget>
         </item>
         <item row="1" column="1">
          <widget class="QLabel" name="label_21">
@@ -308,13 +402,34 @@
          </widget>
         </item>
         <item row="5" column="1">
-         <widget class="QLineEdit" name="lineEdit_7"/>
+         <widget class="QLineEdit" name="lineEdit_7">
+          <property name="styleSheet">
+           <string notr="true">border: 1px solid black;
+box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5), 
+           inset 10px 10px 15px rgba(70, 70, 70, 0.12);
+</string>
+          </property>
+         </widget>
         </item>
         <item row="4" column="1">
-         <widget class="QLineEdit" name="lineEdit_6"/>
+         <widget class="QLineEdit" name="lineEdit_6">
+          <property name="styleSheet">
+           <string notr="true">border: 1px solid black;
+box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5), 
+           inset 10px 10px 15px rgba(70, 70, 70, 0.12);
+</string>
+          </property>
+         </widget>
         </item>
         <item row="7" column="1">
-         <widget class="QLineEdit" name="lineEdit_9"/>
+         <widget class="QLineEdit" name="lineEdit_9">
+          <property name="styleSheet">
+           <string notr="true">border: 1px solid black;
+box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5), 
+           inset 10px 10px 15px rgba(70, 70, 70, 0.12);
+</string>
+          </property>
+         </widget>
         </item>
         <item row="5" column="0">
          <widget class="QLabel" name="label_17">
@@ -367,6 +482,10 @@
         </item>
         <item row="0" column="0" colspan="2">
          <widget class="QPushButton" name="pushButton_2">
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(186, 186, 186);
+border: 4px solid rgb(186, 186, 186);</string>
+          </property>
           <property name="text">
            <string>Выбрать файл</string>
           </property>
@@ -390,6 +509,10 @@
       </item>
       <item>
        <widget class="QPushButton" name="start_2">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(186, 186, 186);
+border: 4px solid rgb(186, 186, 186);</string>
+        </property>
         <property name="text">
          <string>Начать</string>
         </property>
@@ -398,6 +521,18 @@
      </layout>
     </widget>
     <widget class="QWidget" name="tab_3">
+     <property name="minimumSize">
+      <size>
+       <width>900</width>
+       <height>600</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>900</width>
+       <height>600</height>
+      </size>
+     </property>
      <attribute name="title">
       <string>Баннер(Пользователи)</string>
      </attribute>
@@ -440,7 +575,14 @@
          </widget>
         </item>
         <item row="5" column="1">
-         <widget class="QLineEdit" name="lineEdit_11"/>
+         <widget class="QLineEdit" name="lineEdit_11">
+          <property name="styleSheet">
+           <string notr="true">border: 1px solid black;
+box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5), 
+           inset 10px 10px 15px rgba(70, 70, 70, 0.12);
+</string>
+          </property>
+         </widget>
         </item>
         <item row="2" column="1">
          <widget class="QLabel" name="label_33">
@@ -458,13 +600,24 @@
         </item>
         <item row="0" column="0" colspan="2">
          <widget class="QPushButton" name="pushButton_3">
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(186, 186, 186);
+border: 4px solid rgb(186, 186, 186);</string>
+          </property>
           <property name="text">
            <string>Выбрать файл</string>
           </property>
          </widget>
         </item>
         <item row="6" column="1">
-         <widget class="QLineEdit" name="lineEdit_12"/>
+         <widget class="QLineEdit" name="lineEdit_12">
+          <property name="styleSheet">
+           <string notr="true">border: 1px solid black;
+box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5), 
+           inset 10px 10px 15px rgba(70, 70, 70, 0.12);
+</string>
+          </property>
+         </widget>
         </item>
         <item row="4" column="0">
          <widget class="QLabel" name="label_27">
@@ -474,10 +627,24 @@
          </widget>
         </item>
         <item row="7" column="1">
-         <widget class="QLineEdit" name="lineEdit_13"/>
+         <widget class="QLineEdit" name="lineEdit_13">
+          <property name="styleSheet">
+           <string notr="true">border: 1px solid black;
+box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5), 
+           inset 10px 10px 15px rgba(70, 70, 70, 0.12);
+</string>
+          </property>
+         </widget>
         </item>
         <item row="4" column="1">
-         <widget class="QLineEdit" name="lineEdit_10"/>
+         <widget class="QLineEdit" name="lineEdit_10">
+          <property name="styleSheet">
+           <string notr="true">border: 1px solid black;
+box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5), 
+           inset 10px 10px 15px rgba(70, 70, 70, 0.12);
+</string>
+          </property>
+         </widget>
         </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_24">
@@ -511,6 +678,10 @@
       </item>
       <item>
        <widget class="QPushButton" name="start_3">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(186, 186, 186);
+border: 4px solid rgb(186, 186, 186);</string>
+        </property>
         <property name="text">
          <string>Начать</string>
         </property>
@@ -519,6 +690,18 @@
      </layout>
     </widget>
     <widget class="QWidget" name="tab_4">
+     <property name="minimumSize">
+      <size>
+       <width>900</width>
+       <height>600</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>900</width>
+       <height>600</height>
+      </size>
+     </property>
      <attribute name="title">
       <string>Через запятую</string>
      </attribute>
@@ -527,6 +710,13 @@
        <layout class="QGridLayout" name="gridLayout_5">
         <item row="0" column="0" colspan="2">
          <widget class="QPushButton" name="pushButton_4">
+          <property name="toolTipDuration">
+           <number>-1</number>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(186, 186, 186);
+border: 4px solid rgb(186, 186, 186);</string>
+          </property>
           <property name="text">
            <string>Выбрать файл</string>
           </property>
@@ -554,7 +744,14 @@
          </widget>
         </item>
         <item row="6" column="1">
-         <widget class="QLineEdit" name="lineEdit_16"/>
+         <widget class="QLineEdit" name="lineEdit_16">
+          <property name="styleSheet">
+           <string notr="true">border: 1px solid black;
+box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5), 
+           inset 10px 10px 15px rgba(70, 70, 70, 0.12);
+</string>
+          </property>
+         </widget>
         </item>
         <item row="3" column="0">
          <widget class="QLabel" name="label_37">
@@ -571,7 +768,14 @@
          </widget>
         </item>
         <item row="4" column="1">
-         <widget class="QLineEdit" name="lineEdit_14"/>
+         <widget class="QLineEdit" name="lineEdit_14">
+          <property name="styleSheet">
+           <string notr="true">border: 1px solid black;
+box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5), 
+           inset 10px 10px 15px rgba(70, 70, 70, 0.12);
+</string>
+          </property>
+         </widget>
         </item>
         <item row="1" column="1">
          <widget class="QLabel" name="label_41">
@@ -602,12 +806,23 @@
          </widget>
         </item>
         <item row="5" column="1">
-         <widget class="QLineEdit" name="lineEdit_15"/>
+         <widget class="QLineEdit" name="lineEdit_15">
+          <property name="styleSheet">
+           <string notr="true">border: 1px solid black;
+box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5), 
+           inset 10px 10px 15px rgba(70, 70, 70, 0.12);
+</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>
       <item>
        <widget class="QPushButton" name="start_4">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(186, 186, 186);
+border: 4px solid rgb(186, 186, 186);</string>
+        </property>
         <property name="text">
          <string>Начать</string>
         </property>
@@ -616,6 +831,24 @@
      </layout>
     </widget>
     <widget class="QWidget" name="tab_5">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>900</width>
+       <height>600</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>900</width>
+       <height>600</height>
+      </size>
+     </property>
      <attribute name="title">
       <string>Найти некорректную УТ</string>
      </attribute>
@@ -624,6 +857,13 @@
        <layout class="QGridLayout" name="gridLayout_2">
         <item row="0" column="0" colspan="2">
          <widget class="QPushButton" name="pushButton_5">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(186, 186, 186);
+border: 4px solid rgb(186, 186, 186);</string>
+          </property>
           <property name="text">
            <string>Выбрать файл</string>
           </property>
@@ -650,8 +890,12 @@
         <property name="minimumSize">
          <size>
           <width>0</width>
-          <height>31</height>
+          <height>20</height>
          </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(186, 186, 186);
+border: 4px solid rgb(186, 186, 186);</string>
         </property>
         <property name="text">
          <string>Начать</string>
@@ -661,6 +905,18 @@
      </layout>
     </widget>
     <widget class="QWidget" name="tab_6">
+     <property name="minimumSize">
+      <size>
+       <width>900</width>
+       <height>600</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>900</width>
+       <height>600</height>
+      </size>
+     </property>
      <attribute name="title">
       <string>Найти некорректную дату</string>
      </attribute>
@@ -669,8 +925,8 @@
        <rect>
         <x>10</x>
         <y>9</y>
-        <width>861</width>
-        <height>491</height>
+        <width>881</width>
+        <height>551</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="gridLayout_3">
@@ -690,6 +946,10 @@
        </item>
        <item row="0" column="0" colspan="2">
         <widget class="QPushButton" name="pushButton_6">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(186, 186, 186);
+border: 4px solid rgb(186, 186, 186);</string>
+         </property>
          <property name="text">
           <string>Выбрать файл</string>
          </property>
@@ -701,10 +961,14 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>510</y>
-        <width>861</width>
-        <height>31</height>
+        <y>570</y>
+        <width>881</width>
+        <height>20</height>
        </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(186, 186, 186);
+border: 4px solid rgb(186, 186, 186);</string>
       </property>
       <property name="text">
        <string>Начать</string>
@@ -712,6 +976,18 @@
      </widget>
     </widget>
     <widget class="QWidget" name="tab_7">
+     <property name="minimumSize">
+      <size>
+       <width>900</width>
+       <height>600</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>900</width>
+       <height>600</height>
+      </size>
+     </property>
      <attribute name="title">
       <string>Отгрузить перемещение</string>
      </attribute>
@@ -720,8 +996,8 @@
        <rect>
         <x>9</x>
         <y>9</y>
-        <width>861</width>
-        <height>491</height>
+        <width>881</width>
+        <height>551</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="gridLayout_6">
@@ -741,6 +1017,10 @@
        </item>
        <item row="0" column="0" colspan="2">
         <widget class="QPushButton" name="pushButton_7">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(186, 186, 186);
+border: 4px solid rgb(186, 186, 186);</string>
+         </property>
          <property name="text">
           <string>Выбрать файл</string>
          </property>
@@ -752,10 +1032,14 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>510</y>
-        <width>861</width>
-        <height>31</height>
+        <y>570</y>
+        <width>881</width>
+        <height>20</height>
        </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(186, 186, 186);
+border: 4px solid rgb(186, 186, 186);</string>
       </property>
       <property name="text">
        <string>Начать</string>
@@ -763,6 +1047,18 @@
      </widget>
     </widget>
     <widget class="QWidget" name="tab_8">
+     <property name="minimumSize">
+      <size>
+       <width>900</width>
+       <height>600</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>900</width>
+       <height>600</height>
+      </size>
+     </property>
      <attribute name="title">
       <string>Проверка настроек ЦФЗ</string>
      </attribute>
@@ -771,8 +1067,8 @@
        <rect>
         <x>9</x>
         <y>9</y>
-        <width>861</width>
-        <height>491</height>
+        <width>881</width>
+        <height>551</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="gridLayout_8">
@@ -792,10 +1088,14 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>510</y>
-        <width>861</width>
-        <height>31</height>
+        <y>570</y>
+        <width>881</width>
+        <height>20</height>
        </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(186, 186, 186);
+border: 4px solid rgb(186, 186, 186);</string>
       </property>
       <property name="text">
        <string>Начать</string>
@@ -820,7 +1120,7 @@
     </property>
     <property name="icon">
      <iconset>
-      <normaloff>auth.png</normaloff>auth.png</iconset>
+      <normaloff>static/images/auth.png</normaloff>static/images/auth.png</iconset>
     </property>
     <addaction name="action_2"/>
    </widget>

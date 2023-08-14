@@ -1,9 +1,11 @@
-from PyQt5.QtWidgets import QMainWindow
-from PyQt5 import uic, QtGui
+from PyQt5.QtWidgets import QDialog
+
+from PyQt5 import uic
 
 
-class AuthWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
+class AuthWindow(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
         uic.loadUi('auth.ui', self)
-        self.setWindowIcon(QtGui.QIcon('static/images/credentials.png'))
+
+

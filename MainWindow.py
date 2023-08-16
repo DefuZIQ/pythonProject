@@ -13,7 +13,7 @@ from dateutil.relativedelta import relativedelta
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        uic.loadUi('main.ui', self)
+        uic.loadUi('C:/Users/defuziq/PycharmProjects/pythonProject/static/main.ui', self)
         self.action_2.triggered.connect(self.create_window)
         self.pushButton.clicked.connect(self.upload_excel)
         self.pushButton_2.clicked.connect(self.upload_excel2)
@@ -22,6 +22,7 @@ class MainWindow(QMainWindow):
         self.pushButton_5.clicked.connect(self.upload_excel5)
         self.pushButton_6.clicked.connect(self.upload_excel6)
         self.pushButton_7.clicked.connect(self.upload_excel7)
+
         self.start_1.clicked.connect(self.start_app1)
         self.start_2.clicked.connect(self.start_app2)
         self.start_3.clicked.connect(self.start_app3)
@@ -30,6 +31,8 @@ class MainWindow(QMainWindow):
         self.start_6.clicked.connect(self.start_app6)
         self.start_7.clicked.connect(self.start_app7)
         self.start_8.clicked.connect(self.start_app8)
+        #Надо использовать QtWidget.setToolTip('text')
+
 
     def create_window(self):
         window = AuthWindow(self)
@@ -41,12 +44,13 @@ class MainWindow(QMainWindow):
         self.logs.setReadOnly(True)
 
     def path_file(self, label, label2=None, label3=None):
+        self.logs.clear()
+        self.save_log(text="Идёт чтение файла")
         filetypes = (("Excel", "*.xlsx"), ("Excel", "*.xls"), ("Excel", "*.xlsm"), ("csv", "*.csv"), ("txt", "*.txt"))
         path = filedialog.askopenfilename(title="Выбрать файл", initialdir="", filetypes=filetypes)
         file_name = os.path.basename(path)
-        self.logs.clear()
         if path == "":
-            print(1)
+            self.logs.clear()
             self.save_log(text="Вы не выбрали файл")
             label.setText("")
             if label2 is None:
@@ -56,6 +60,7 @@ class MainWindow(QMainWindow):
                 label3.setText("")
         else:
             label.setText(path)
+            self.logs.clear()
             self.save_log(text="Вы выбрали файл: " + file_name)
         return path
 
@@ -99,69 +104,40 @@ class MainWindow(QMainWindow):
     def upload_excel7(self):
         self.path_file(self.label_48)
 
+    @staticmethod
+    def show_text(label):
+        return label.text()
 
-    def show_data1(self):
-        print(self.lineEdit.text())
-        return self.lineEdit.text()
+    def validate_excel(self, label, sheets):
+        symbols = [',', ' ']
+        path = self.show_text(label=label)
+        df = pd.read_excel(path, sheet_name=sheets, header=None)
+        print(df['Лист1'])
+        df = df['Лист1'].replace(';', '', regex=True)
+        print(df)
+        writer = pd.ExcelWriter(path)
+        df.to_excel(writer, sheet_name=sheets, index=False, header=False)
+        writer.close()
+        """for symbol in symbols:
+            df = df.replace(',', '', regex=True)
+            print(df)
+            writer = pd.ExcelWriter(path)
+            df.to_excel(writer, sheet_name=sheets, index=False, header=False)
+            writer.close()"""
 
-    def show_data2(self):
-        print(self.lineEdit_2.text())
-        return self.lineEdit_2.text()
-
-    def show_data3(self):
-        print(self.lineEdit_3.text())
-        return self.lineEdit_3.text()
-
-    def show_data4(self):
-        print(self.lineEdit_4.text())
-        return self.lineEdit_4.text()
-
-    def show_data5(self):
-        print(self.lineEdit_5.text())
-        return self.lineEdit_5.text()
-
-    def show_data6(self):
-        print(self.lineEdit_6.text())
-        return self.lineEdit_6.text()
-
-    def show_data7(self):
-        print(self.lineEdit_7.text())
-        return self.lineEdit_7.text()
-
-    def show_data8(self):
-        print(self.lineEdit_8.text())
-        return self.lineEdit_8.text()
-
-    def show_data9(self):
-        print(self.lineEdit_9.text())
-        return self.lineEdit_9.text()
-
-    def show_data10(self):
-        print(self.lineEdit_10.text())
-        return self.lineEdit_10.text()
-
-    def show_data11(self):
-        print(self.lineEdit_11.text())
-        return self.lineEdit_11.text()
-
-    def show_data12(self):
-        print(self.lineEdit_12.text())
-        return self.lineEdit_12.text()
-
-    def show_data13(self):
-        print(self.lineEdit_13.text())
-        return self.lineEdit_13.text()
 
     def start_app1(self):
-        path = self.label_17.text()
+        path = self.show_text(label=self.label_9)
+        print(path)
         wb = load_workbook(path)
         sheets = wb.sheetnames
         for sheet in sheets:
             sheet = wb[sheet]
             print(sheet)
-        x = int(self.show_data1())
 
-        # Валидация excel файла
+        self.validate_excel(label=self.label_9, sheets=sheets)
+
+        """# Валидация excel файла
         df = pd.read_excel(path, sheet_name=sheets[x], header=None)
         df = df[0].replace(',', '', regex=True)
         writer = pd.ExcelWriter(path)
@@ -236,7 +212,7 @@ class MainWindow(QMainWindow):
 
         with open(file_name, 'w') as f:
             f.write(new_data)
-            print('Готово, создан файл: ' + file_name)
+            print('Готово, создан файл: ' + file_name)"""
 
     def start_app2(self):
         path = self.label_20.text()

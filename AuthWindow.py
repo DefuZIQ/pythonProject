@@ -6,6 +6,6 @@ from PyQt5 import uic
 class AuthWindow(QDialog):
     def __init__(self, parent):
         super().__init__(parent)
-        uic.loadUi('auth.ui', self)
+        uic.loadUi('C:/Users/defuziq/PycharmProjects/pythonProject/static/auth.ui', self)
 
 

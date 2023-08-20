@@ -33,7 +33,6 @@ class MainWindow(QMainWindow):
         self.start_8.clicked.connect(self.start_app8)
         #Надо использовать QtWidget.setToolTip('text')
 
-
     def create_window(self):
         window = AuthWindow(self)
         window.show()
@@ -45,43 +44,50 @@ class MainWindow(QMainWindow):
 
     def path_file(self, label, label2=None, label3=None):
         self.logs.clear()
-        self.save_log(text="Идёт чтение файла")
-        filetypes = (("Excel", "*.xlsx"), ("Excel", "*.xls"), ("Excel", "*.xlsm"), ("csv", "*.csv"), ("txt", "*.txt"))
-        path = filedialog.askopenfilename(title="Выбрать файл", initialdir="", filetypes=filetypes)
+        self.save_log(text='Идёт чтение файла')
+        filetypes = (('Excel', '*.xlsx'), ('Excel', '*.xls'), ('Excel', '*.xlsm'), ('csv', '*.csv'), ('txt', '*.txt'))
+        path = filedialog.askopenfilename(title='Выбрать файл', initialdir='', filetypes=filetypes)
         file_name = os.path.basename(path)
         if path == "":
             self.logs.clear()
-            self.save_log(text="Вы не выбрали файл")
-            label.setText("")
+            self.save_log(text='Вы не выбрали файл')
+            label.setText('')
             if label2 is None:
                 pass
             else:
-                label2.setText("")
-                label3.setText("")
+                label2.setText('')
+                label3.setText('')
         else:
             label.setText(path)
             self.logs.clear()
-            self.save_log(text="Вы выбрали файл: " + file_name)
+            self.save_log(text='Вы выбрали файл: ' + file_name)
         return path
 
-    def open_excel(self, label, label2=None, label3=None):
-        path = self.path_file(label, label2=None, label3=None)
+    def open_excel(self, label, label2, label3):
+        path = self.path_file(label, label2, label3)
         if path == "":
             return
         else:
-            wb = load_workbook(path)
-            sheets = wb.sheetnames
-            sheet_row = []
-            for sheet in sheets:
-                df = pd.read_excel(io=path, sheet_name=sheet, header=None)
-                count_columns = len(df.axes[1])
-                array = []
-                for i in range(count_columns):
-                    count_rows = df[df.columns[i]].count()
-                    array.append({i: count_rows})
-                sheet_row.append({sheet: array})
-            label2.setText(str(sheets))
-            label3.setText(str(sheet_row))
+            try:
+                wb = load_workbook(path)
+                sheets = wb.sheetnames
+                sheet_row = []
+                for sheet in sheets:
+                    df = pd.read_excel(io=path, sheet_name=sheet, header=None)
+                    count_columns = len(df.axes[1])
+                    array = []
+                    for i in range(count_columns):
+                        count_rows = df[df.columns[i]].count()
+                        array.append({i: count_rows})
+                    sheet_row.append({sheet: array})
+                label2.setText(str(sheets))
+                label3.setText(str(sheet_row))
+            except:
+                self.logs.clear()
+                label.setText('')
+                label2.setText('')
+                label3.setText('')
+                self.save_log('Выберите корректный файл')
 
     def upload_excel(self):
         self.open_excel(label=self.label_9, label2=self.label_10, label3=self.label_11)
@@ -104,38 +110,109 @@ class MainWindow(QMainWindow):
     def upload_excel7(self):
         self.path_file(self.label_48)
 
-    @staticmethod
-    def show_text(label):
-        return label.text()
+    def validate_integer(self, value):
+        try:
+            value = int(value)
+            return value
+        except:
+            return False
 
-    def validate_excel(self, label, sheets):
-        symbols = [',', ' ']
-        path = self.show_text(label=label)
-        df = pd.read_excel(path, sheet_name=sheets, header=None)
-        print(df['Лист1'])
-        df = df['Лист1'].replace(';', '', regex=True)
-        print(df)
-        writer = pd.ExcelWriter(path)
-        df.to_excel(writer, sheet_name=sheets, index=False, header=False)
-        writer.close()
-        """for symbol in symbols:
-            df = df.replace(',', '', regex=True)
-            print(df)
-            writer = pd.ExcelWriter(path)
-            df.to_excel(writer, sheet_name=sheets, index=False, header=False)
-            writer.close()"""
+    def show_input(self, label):
+        result = label.text()
+        return result
 
-
-    def start_app1(self):
-        path = self.show_text(label=self.label_9)
-        print(path)
+    def sheets_excel(self, label):
+        path = self.show_input(label)
         wb = load_workbook(path)
         sheets = wb.sheetnames
-        for sheet in sheets:
-            sheet = wb[sheet]
-            print(sheet)
+        return sheets
 
-        self.validate_excel(label=self.label_9, sheets=sheets)
+    def validate_input_sheet(self, label, line):
+        sheets = self.sheets_excel(label)
+        input_sheet_null = self.show_input(line)
+        input_sheet = self.validate_integer(self.show_input(line))
+        if input_sheet_null == '':
+            self.save_log('Вы не выбрали лист')
+            return False
+        elif input_sheet is False:
+            self.save_log('Вы ввели некорректное значение')
+            return False
+        elif input_sheet >= len(sheets):
+            self.save_log('Вы выбрали не существующий лист')
+            return False
+        else:
+            return sheets[self.validate_integer(input_sheet)]
+
+    def validate_input_columns(self, line):
+        if self.show_input(line) == '':
+            return self.show_input(line)
+        else:
+            result = [self.validate_integer(column) for column in self.show_input(line).split(',')]
+            if False in result:
+                self.save_log('Вы ввели некорректное значение в поле "Выбрать столбцы"')
+                return False
+            else:
+                return result
+
+    def validate_input_slice(self, line):
+        if self.validate_integer(self.show_input(label=line)) is False:
+            self.save_log('Вы не выбрали по сколько разделить или ввели некорректное значение')
+        else:
+            return self.validate_integer(self.show_input(label=line))
+
+    def validate_input(self, label, line, line2, line3):
+        path = self.show_input(label=label)
+        if path == '':
+            self.save_log('Вы не выбрали файл')
+        else:
+            input_sheet = self.validate_input_sheet(label, line)
+            input_columns = self.validate_input_columns(line2)
+            input_slice = self.validate_input_slice(line3)
+            if input_sheet is False:
+                pass
+            elif input_columns is False:
+                pass
+            elif input_slice is False:
+                pass
+            else:
+                self.save_log('Вы выбрали лист: ' + str(input_sheet))
+                self.save_log('Вы выбрали столбцы: ' + str(', '.join(map(str, input_columns))))
+                self.save_log('Вы выбрали разделить по: ' + str(input_slice))
+                return True
+
+    def validate_excel(self, label, line):
+        sheets = self.sheets_excel(label)
+        symbols = [',', ';', ':', ' ', '\.', '\(', '\)']
+        path = self.show_input(label=label)
+        sheet = sheets[int(self.show_input(line))]
+        df = pd.read_excel(path, sheet_name=sheet, header=None)
+        for symbol in symbols:
+            df = df.replace(symbol, '', regex=True)
+        self.save_log('Файл провалидирован')
+        print(df)
+        return df
+
+    def drop_duplicates(self, df):
+        duplicates = df[df.duplicated()]
+        duplicates = duplicates.drop_duplicates()
+        duplicates = duplicates.values.astype(str).tolist()
+        df = df.drop_duplicates()
+        for i in range(len(df.axes[0])):
+            print(df)
+            df[i] = df[i].dropna(axis=0, how='any')
+        return duplicates
+
+    def df_slice(self):
+        pass
+
+    def start_app1(self):
+        valid = self.validate_input(label=self.label_9, line=self.lineEdit, line2=self.lineEdit_2, line3=self.lineEdit_3)
+        if valid is True:
+            self.validate_excel(label=self.label_9, line=self.lineEdit)
+            #self.drop_duplicates(df=df)
+
+
+
 
         """# Валидация excel файла
         df = pd.read_excel(path, sheet_name=sheets[x], header=None)

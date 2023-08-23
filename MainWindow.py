@@ -8,6 +8,7 @@ from tkinter import filedialog
 from openpyxl import load_workbook
 import pandas as pd
 from dateutil.relativedelta import relativedelta
+from functools import lru_cache
 
 
 class MainWindow(QMainWindow):
@@ -42,11 +43,11 @@ class MainWindow(QMainWindow):
         self.logs.appendPlainText(text)
         self.logs.setReadOnly(True)
 
-    def path_file(self, label, label2=None, label3=None):
+    def path_file(self, label, label2=None, label3=None, filetype=0):
         self.logs.clear()
         self.save_log(text='Идёт чтение файла')
-        filetypes = (('Excel', '*.xlsx'), ('Excel', '*.xls'), ('Excel', '*.xlsm'), ('csv', '*.csv'), ('txt', '*.txt'))
-        path = filedialog.askopenfilename(title='Выбрать файл', initialdir='', filetypes=filetypes)
+        filetypes = [(('Excel', '*.xlsx'), ('Excel', '*.xls'), ('Excel', '*.xlsm')), (('txt', '*.txt'), ('csv', '*.csv'))]
+        path = filedialog.askopenfilename(title='Выбрать файл', initialdir='', filetypes=filetypes[filetype])
         file_name = os.path.basename(path)
         if path == "":
             self.logs.clear()
@@ -102,20 +103,20 @@ class MainWindow(QMainWindow):
         self.open_excel(label=self.label_40, label2=self.label_41, label3=self.label_42)
 
     def upload_excel5(self):
-        self.path_file(self.label_44)
+        self.path_file(self.label_44, filetype=1)
 
     def upload_excel6(self):
-        self.path_file(self.label_46)
+        self.path_file(self.label_46, filetype=1)
 
     def upload_excel7(self):
-        self.path_file(self.label_48)
+        self.path_file(self.label_48, filetype=1)
 
     def validate_integer(self, value):
         try:
             value = int(value)
             return value
         except:
-            return False
+            return 'Invalid'
 
     def show_input(self, label):
         result = label.text()
@@ -143,20 +144,34 @@ class MainWindow(QMainWindow):
         else:
             return sheets[self.validate_integer(input_sheet)]
 
-    def validate_input_columns(self, line):
-        if self.show_input(line) == '':
-            return self.show_input(line)
+    def validate_input_columns(self, label, line, line2):
+        columns = self.show_input(line2)
+        if columns == '':
+            return columns
         else:
-            result = [self.validate_integer(column) for column in self.show_input(line).split(',')]
-            if False in result:
+            columns = [self.validate_integer(column) for column in columns.split(',')]
+            if 'Invalid' in columns:
                 self.save_log('Вы ввели некорректное значение в поле "Выбрать столбцы"')
                 return False
             else:
-                return result
+                path = self.show_input(label)
+                sheets = self.sheets_excel(label)
+                sheet = sheets[int(self.show_input(line))]
+                print(sheet)
+                df = pd.read_excel(path, sheet_name=sheet, header=None)
+                all_columns = [i for i in range(len(df.axes[1]))]
+                bool_columns = tuple(x in all_columns for x in columns)
+                if False in bool_columns:
+                    self.save_log('Вы выбрали несуществующий столбец в поле "Выбрать столбцы"')
+                    return False
+                else:
+                    print(columns)
+                    return columns
 
     def validate_input_slice(self, line):
-        if self.validate_integer(self.show_input(label=line)) is False:
+        if self.validate_integer(self.show_input(label=line)) == 'Invalid' or self.validate_integer(self.show_input(label=line)) == 0:
             self.save_log('Вы не выбрали по сколько разделить или ввели некорректное значение')
+            return False
         else:
             return self.validate_integer(self.show_input(label=line))
 
@@ -166,7 +181,7 @@ class MainWindow(QMainWindow):
             self.save_log('Вы не выбрали файл')
         else:
             input_sheet = self.validate_input_sheet(label, line)
-            input_columns = self.validate_input_columns(line2)
+            input_columns = self.validate_input_columns(label, line, line2)
             input_slice = self.validate_input_slice(line3)
             if input_sheet is False:
                 pass
@@ -176,11 +191,38 @@ class MainWindow(QMainWindow):
                 pass
             else:
                 self.save_log('Вы выбрали лист: ' + str(input_sheet))
-                self.save_log('Вы выбрали столбцы: ' + str(', '.join(map(str, input_columns))))
+                if input_columns == '':
+                    self.save_log('Вы выбрали все столбцы')
+                else:
+                    self.save_log('Вы выбрали столбцы: ' + str(', '.join(map(str, input_columns))))
                 self.save_log('Вы выбрали разделить по: ' + str(input_slice))
                 return True
 
-    def validate_excel(self, label, line):
+    def get_dataframe(self, label, line, line2):
+        sheets = self.sheets_excel(label)
+        sheet = sheets[int(self.show_input(line))]
+        path = self.show_input(label)
+        dfs = pd.read_excel(path, sheet_name=sheet, header=None)
+        df = pd.DataFrame([])
+        columns = self.show_input(line2)
+        if columns == '':
+            for i in range(len(dfs.axes[1])):
+                df = pd.concat([df, dfs[i]], ignore_index=True)
+            df = df.dropna(axis=0, how='any')
+            df = df.reset_index(drop=True)
+            print(df)
+        else:
+            columns = [int(column) for column in columns.split(',')]
+            print(columns)
+            for i in range(len(dfs.axes[1])):
+                for column in columns:
+                    if i == column:
+                        df = pd.concat([df, dfs[i]], ignore_index=True)
+            df = df.dropna(axis=0, how='any')
+            df = df.reset_index(drop=True)
+            print(df)
+
+    def validate_excel(self, label, line, line2):
         sheets = self.sheets_excel(label)
         symbols = [',', ';', ':', ' ', '\.', '\(', '\)']
         path = self.show_input(label=label)
@@ -189,18 +231,36 @@ class MainWindow(QMainWindow):
         for symbol in symbols:
             df = df.replace(symbol, '', regex=True)
         self.save_log('Файл провалидирован')
-        print(df)
+        columns = self.show_input(line2)
         return df
 
-    def drop_duplicates(self, df):
-        duplicates = df[df.duplicated()]
-        duplicates = duplicates.drop_duplicates()
-        duplicates = duplicates.values.astype(str).tolist()
-        df = df.drop_duplicates()
-        for i in range(len(df.axes[0])):
-            print(df)
-            df[i] = df[i].dropna(axis=0, how='any')
-        return duplicates
+    def find_duplicates(self, df):
+        pass
+    def drop_duplicates(self, df, line):
+        columns = self.show_input(line)
+        if columns == '':
+            dfs = df[0]
+            if len(df.axes[0]) == 0:
+                dfs = df[0]
+            else:
+                for i in range(1, len(df.axes[0])):
+                    dfs = pd.concat([dfs, df[i]], ignore_index=True)
+                print(dfs)
+                dfs = dfs.dropna(axis=0, how='any')
+                dfs = dfs.reset_index(drop=True)
+            print(dfs)
+            duplicates = dfs[dfs.duplicated()]
+            duplicates = duplicates.drop_duplicates()
+            duplicates = duplicates.values.astype(str).tolist()
+            dfs = dfs.drop_duplicates()
+            return duplicates
+        else:
+            for i in range(0, len(df.axes[0])):
+                if i in columns:
+                    print(i)
+
+
+
 
     def df_slice(self):
         pass
@@ -208,8 +268,8 @@ class MainWindow(QMainWindow):
     def start_app1(self):
         valid = self.validate_input(label=self.label_9, line=self.lineEdit, line2=self.lineEdit_2, line3=self.lineEdit_3)
         if valid is True:
-            self.validate_excel(label=self.label_9, line=self.lineEdit)
-            #self.drop_duplicates(df=df)
+            df = self.get_dataframe(label=self.label_9, line=self.lineEdit, line2=self.lineEdit_2)
+            #self.drop_duplicates(df=df, line=self.lineEdit_2)
 
 
 
@@ -550,7 +610,6 @@ class MainWindow(QMainWindow):
     def start_app5(self):
         jsons = open(self.label_6.text(), "r", encoding="utf-8")
         jsons = jsons.read()
-
         jsons = jsons.split(', enriched requests document numbers = [')
         print('Этап первый')
         jsons = jsons[1]
@@ -627,61 +686,38 @@ class MainWindow(QMainWindow):
             print('Готово, создан файл: ' + file_name)
 
     def start_app6(self):
-        jsons = open(self.label_29.text(), "r", encoding="utf-8")
-        jsons = jsons.read()
-        jsons = json.loads(jsons)
-
-        length = len(jsons['RECEIPTS'])
-        length2 = len(jsons['RECEIPTS'][0]['DETAIL'])
-
-        print(length2)
-
+        path = self.show_input(self.label_46)
+        jsons = open(path, "r", encoding="utf-8")
+        jsons = json.loads(jsons.read())
         result = []
-
         data = date.today()
+        if 'RECEIPTS' in jsons:
+            confirm = 'RECEIPTS'
+        elif 'SHIPMENTS' in jsons:
+            confirm = 'SHIPMENTS'
+        length = len(jsons[confirm])
+        length2 = len(jsons[confirm][0]['DETAIL'])
         for n in range(0, length2 - 1):
-            if jsons['RECEIPTS'][0]['DETAIL'][n]['MAN_DATE'] == '0001-01-01':
-                result.append(jsons['RECEIPTS'][0]['DETAIL'][n])
-            else:
-                print('Пусто 1')
-
-            if jsons['RECEIPTS'][0]['DETAIL'][n]['MAN_DATE'] > str(data):
-                result.append(jsons['RECEIPTS'][0]['DETAIL'][n])
-            else:
-                print(str(date.today()))
-                print('Пусто 2')
-
-            if jsons['RECEIPTS'][0]['DETAIL'][n]['EXP_DATE'] < str(data):
-                result.append(jsons['RECEIPTS'][0]['DETAIL'][n])
-            else:
-                print('Пусто 3')
-
-            if jsons['RECEIPTS'][0]['DETAIL'][n]['MAN_DATE'] < str(data - relativedelta(years=10)):
-                result.append(jsons['RECEIPTS'][0]['DETAIL'][n])
-            else:
-                print('Пусто 4')
-
-            if jsons['RECEIPTS'][0]['DETAIL'][n]['EXP_DATE'] > str(data + relativedelta(years=15)):
-                result.append(jsons['RECEIPTS'][0]['DETAIL'][n])
-            else:
-                print('Пусто 5')
-
+            if jsons[confirm][0]['DETAIL'][n]['MAN_DATE'] == '0001-01-01':
+                result.append(jsons[confirm][0]['DETAIL'][n])
+            elif jsons[confirm][0]['DETAIL'][n]['MAN_DATE'] > str(data):
+                result.append(jsons[confirm][0]['DETAIL'][n])
+            elif jsons[confirm][0]['DETAIL'][n]['EXP_DATE'] < str(data):
+                result.append(jsons[confirm][0]['DETAIL'][n])
+            elif jsons[confirm][0]['DETAIL'][n]['MAN_DATE'] < str(data - relativedelta(years=10)):
+                result.append(jsons[confirm][0]['DETAIL'][n])
+            elif jsons[confirm][0]['DETAIL'][n]['EXP_DATE'] > str(data + relativedelta(years=15)):
+                result.append(jsons[confirm][0]['DETAIL'][n])
         str_current_datetime = str(datetime.now()).replace(':', '-')
         file_name = "shipment " + str_current_datetime + ".sql"
-
         with open(file_name, 'w', encoding='utf-8') as file:
             file.write(f'{result}\n')
-
         with open(file_name, 'r') as f:
             old_data = f.read()
-        # Валидация итогового файла
-
         new_data = old_data.replace(',', ', \n')
-        # new_data = new_data.replace("'", '"')
-
         with open(file_name, 'w') as f:
             f.write(new_data)
-            print('Готово, создан файл: ' + file_name)
+            self.save_log('Готово, создан файл: ' + file_name)
 
     def start_app7(self):
         pass

@@ -111,7 +111,7 @@ class MainWindow(QMainWindow):
         self.path_file(self.label_46, filetype=1)
 
     def upload_excel7(self):
-        self.path_file(self.label_48, filetype=1)
+        self.path_file(self.label_48)
 
     def validate_integer(self, value):
         try:
@@ -259,217 +259,307 @@ class MainWindow(QMainWindow):
             result.append(df[slice_object][0].values.astype(vtype).tolist())
         return result
 
-    def start_app1(self):
-        valid = self.validate_input(label=self.label_9, line=self.lineEdit, line2=self.lineEdit_2,
-                                    line3=self.lineEdit_3)
-        if valid is True:
-            df = self.validate_df(self.get_dataframe(label=self.label_9, line=self.lineEdit, line2=self.lineEdit_2))
-            duplicates = self.find_duplicates(df)
-            df = self.drop_duplicates(df)
-            result = self.df_slice(df, self.lineEdit_3, str)
+    def create_csv(self, checkbox, result, vtype):
+        if checkbox.isChecked() is True:
             str_current_datetime = str(datetime.now()).replace(':', '-')
-            file_name = "promotion(promocodes) " + str_current_datetime + ".json"
-            with open(file_name, 'w', encoding='utf-8') as file:
+            if vtype == str:
+                _name = "promocodes"
+                delimiter = '","'
+            elif vtype == int:
+                _name = "users"
+                delimiter = ','
+            file_name = "postman(" + _name + ")" + str_current_datetime + ".csv"
+            with open(file_name, "w", encoding='utf-8', newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([_name])
                 for i in result:
-                    file.write(
-                        f'{{"promotionId": "{self.lineEdit_4.text()}", "promocodes": {i}}}\n')
-                file.write(f'Дубликаты {duplicates}\n')
-            with open(file_name, 'r', encoding='utf-8') as f:
-                old_data = f.read()
-            new_data = old_data.replace("'", '"')
-            new_data = new_data.replace('\\xa0', '')
-            with open(file_name, 'w', encoding='utf-8') as f:
-                f.write(new_data)
+                    i = delimiter.join([str(n) for n in i])
+                    writer.writerow([i])
                 self.save_log('Готово, создан файл: ' + file_name)
-            if self.checkBox.isChecked() is True:
-                file_name2 = "postman(promocodes) " + str_current_datetime + ".csv"
-                with open(file_name2, "w", encoding='utf-8', newline="") as f:
-                    writer = csv.writer(f, quoting=csv.QUOTE_NONNUMERIC)
-                    writer.writerow(["promocodes"])
+
+    def start_app1(self):
+        try:
+            valid = self.validate_input(label=self.label_9, line=self.lineEdit, line2=self.lineEdit_2,
+                                        line3=self.lineEdit_3)
+            if valid is True:
+                df = self.validate_df(self.get_dataframe(label=self.label_9, line=self.lineEdit, line2=self.lineEdit_2))
+                duplicates = self.find_duplicates(df)
+                df = self.drop_duplicates(df)
+                result = self.df_slice(df, self.lineEdit_3, str)
+                str_current_datetime = str(datetime.now()).replace(':', '-')
+                file_name = "promotion(promocodes) " + str_current_datetime + ".json"
+                with open(file_name, 'w', encoding='utf-8') as file:
                     for i in result:
-                        i = [str(n) for n in i]
-                        writer.writerow(i)
-                    self.save_log('Готово, создан файл: ' + file_name2)
+                        file.write(
+                            f'{{"promotionId": "{self.lineEdit_4.text()}", "promocodes": {i}}}\n')
+                    file.write(f'Дубликаты {duplicates}\n')
+                with open(file_name, 'r', encoding='utf-8') as f:
+                    old_data = f.read()
+                new_data = old_data.replace("'", '"')
+                new_data = new_data.replace('\\xa0', '')
+                with open(file_name, 'w', encoding='utf-8') as f:
+                    f.write(new_data)
+                    self.save_log('Готово, создан файл: ' + file_name)
+                self.create_csv(self.checkBox, result, str)
+        except:
+            self.save_log('Что-то пошло не так')
 
     def start_app2(self):
-        valid = self.validate_input(label=self.label_20, line=self.lineEdit_5, line2=self.lineEdit_6,
-                                    line3=self.lineEdit_7)
-        if valid is True:
-            df = self.validate_df(self.get_dataframe(label=self.label_20, line=self.lineEdit_5, line2=self.lineEdit_6))
-            duplicates = self.find_duplicates(df)
-            df = self.drop_duplicates(df)
-            result = self.df_slice(df, self.lineEdit_7, int)
-            str_current_datetime = str(datetime.now()).replace(':', '-')
-            file_name = "promotion(users) " + str_current_datetime + ".json"
-            file_name2 = "postman(users) " + str_current_datetime + ".csv"
-            with open(file_name, 'w', encoding='utf-8') as file:
-                for i in result:
-                    file.write(
-                        f'{{"promotionId": "{self.show_input(self.lineEdit_8)}", "userIds": {i}, "userType": "SAMOKAT", "disableNotifications": true}}\n')
-                file.write(f'Дубликаты {duplicates}\n')
-            with open(file_name, 'r', encoding='utf-8') as f:
-                old_data = f.read()
-            new_data = old_data.replace('\\xa0', '')
-            with open(file_name, 'w', encoding='utf-8') as f:
-                f.write(new_data)
-                self.save_log('Готово, создан файл: ' + file_name)
-            if self.checkBox.isChecked() is True:
-                with open(file_name2, "w", encoding='utf-8', newline="") as f:
-                    writer = csv.writer(f)
-                    writer.writerow(["users"])
+        try:
+            valid = self.validate_input(label=self.label_20, line=self.lineEdit_5, line2=self.lineEdit_6,
+                                        line3=self.lineEdit_7)
+            if valid is True:
+                df = self.validate_df(self.get_dataframe(label=self.label_20, line=self.lineEdit_5, line2=self.lineEdit_6))
+                duplicates = self.find_duplicates(df)
+                df = self.drop_duplicates(df)
+                result = self.df_slice(df, self.lineEdit_7, int)
+                str_current_datetime = str(datetime.now()).replace(':', '-')
+                file_name = "promotion(users) " + str_current_datetime + ".json"
+                with open(file_name, 'w', encoding='utf-8') as file:
                     for i in result:
-                        i = ','.join([str(n) for n in i])
-                        writer.writerow([i])
-                    self.save_log('Готово, создан файл: ' + file_name2)
-
+                        file.write(
+                            f'{{"promotionId": "{self.show_input(self.lineEdit_8)}", "userIds": {i}, "userType": "SAMOKAT", "disableNotifications": true}}\n')
+                    file.write(f'Дубликаты {duplicates}\n')
+                with open(file_name, 'r', encoding='utf-8') as f:
+                    old_data = f.read()
+                new_data = old_data.replace('\\xa0', '')
+                with open(file_name, 'w', encoding='utf-8') as f:
+                    f.write(new_data)
+                    self.save_log('Готово, создан файл: ' + file_name)
+                self.create_csv(self.checkBox_2, result, int)
+        except:
+            self.save_log('Что-то пошло не так')
 
     def start_app3(self):
-        valid = self.validate_input(label=self.label_31, line=self.lineEdit_9, line2=self.lineEdit_10,
-                                    line3=self.lineEdit_11)
-        if valid is True:
-            df = self.validate_df(self.get_dataframe(label=self.label_31, line=self.lineEdit_9, line2=self.lineEdit_10))
-            duplicates = self.find_duplicates(df)
-            df = self.drop_duplicates(df)
-            result = self.df_slice(df, self.lineEdit_11, int)
-            str_current_datetime = str(datetime.now()).replace(':', '-')
-            file_name = "banner(users) " + str_current_datetime + ".json"
-            file_name2 = "postman(users) " + str_current_datetime + ".csv"
-            with open(file_name, 'w', encoding='utf-8') as file:
-                for i in result:
-                    file.write(
-                        file.write(f'{{"userIds": {i}, "userType": "SAMOKAT", "bannerId": "{self.show_input(self.lineEdit_13)}"}}\n'))
-                file.write(f'Дубликаты {duplicates}\n')
-            with open(file_name, 'r', encoding='utf-8') as f:
-                old_data = f.read()
-            new_data = old_data.replace('\\xa0', '')
-            with open(file_name, 'w', encoding='utf-8') as f:
-                f.write(new_data)
-                self.save_log('Готово, создан файл: ' + file_name)
-            if self.checkBox_3.isChecked() is True:
-                with open(file_name2, "w", encoding='utf-8', newline="") as f:
-                    writer = csv.writer(f)
-                    writer.writerow(["users"])
+        try:
+            valid = self.validate_input(label=self.label_31, line=self.lineEdit_9, line2=self.lineEdit_10,
+                                        line3=self.lineEdit_11)
+            if valid is True:
+                df = self.validate_df(self.get_dataframe(label=self.label_31, line=self.lineEdit_9, line2=self.lineEdit_10))
+                duplicates = self.find_duplicates(df)
+                df = self.drop_duplicates(df)
+                result = self.df_slice(df, self.lineEdit_11, int)
+                str_current_datetime = str(datetime.now()).replace(':', '-')
+                file_name = "banner(users) " + str_current_datetime + ".json"
+                with open(file_name, 'w', encoding='utf-8') as file:
                     for i in result:
-                        i = ','.join([str(n) for n in i])
-                        writer.writerow([i])
-                    self.save_log('Готово, создан файл: ' + file_name2)
+                        file.write(
+                            f'{{"userIds": {i}, "userType": "SAMOKAT", "bannerId": "{self.show_input(self.lineEdit_12)}"}}\n')
+                    file.write(f'Дубликаты {duplicates}\n')
+                print(1)
+                with open(file_name, 'r', encoding='utf-8') as f:
+                    old_data = f.read()
+                new_data = old_data.replace('\\xa0', '')
+                with open(file_name, 'w', encoding='utf-8') as f:
+                    f.write(new_data)
+                    self.save_log('Готово, создан файл: ' + file_name)
+                self.create_csv(self.checkBox_3, result, int)
+        except:
+            self.save_log('Что-то пошло не так')
 
     def start_app4(self):
-        valid = self.validate_input(label=self.label_40, line=self.lineEdit_13, line2=self.lineEdit_14,
-                                    line3=self.lineEdit_15)
-        if valid is True:
-            df = self.validate_df(self.get_dataframe(label=self.label_40, line=self.lineEdit_13, line2=self.lineEdit_14))
-            duplicates = self.find_duplicates(df)
-            df = self.drop_duplicates(df)
-            result = self.df_slice(df, self.lineEdit_15, int)
+        try:
+            valid = self.validate_input(label=self.label_40, line=self.lineEdit_13, line2=self.lineEdit_14,
+                                        line3=self.lineEdit_15)
+            if valid is True:
+                df = self.validate_df(self.get_dataframe(label=self.label_40, line=self.lineEdit_13, line2=self.lineEdit_14))
+                duplicates = self.find_duplicates(df)
+                df = self.drop_duplicates(df)
+                result = self.df_slice(df, self.lineEdit_15, int)
+                str_current_datetime = str(datetime.now()).replace(':', '-')
+                file_name = "newfile " + str_current_datetime + ".json"
+                with open(file_name, 'w', encoding='utf-8') as file:
+                    for i in result:
+                        file.write(f'{i}\n')
+                    file.write(f'Дубликаты {duplicates}\n')
+                with open(file_name, 'r', encoding='utf-8') as f:
+                    old_data = f.read()
+                new_data = old_data.replace("'", '')
+                new_data = new_data.replace('\\xa0', '')
+                with open(file_name, 'w', encoding='utf-8') as f:
+                    f.write(new_data)
+                    self.save_log('Готово, создан файл: ' + file_name)
+        except:
+            self.save_log('Что-то пошло не так')
+
+    def start_app5(self):
+        try:
+            jsons = open(self.show_input(self.label_44), "r", encoding="utf-8")
+            jsons = jsons.read()
+            jsons = jsons.split(', enriched requests document numbers = [')
+            jsons = jsons[1]
+            jsons = jsons.split(', document')
+            jmax = len(jsons)
+            for i in range(0, jmax):
+                jsons[i] = jsons[i].split(', products=[')
+            jsons.pop(0)
+            jmax = len(jsons)
+            for i in range(0, jmax):
+                jsons[i][1] = jsons[i][1].split('ConfirmShipmentProduct(')
+            for i in range(0, jmax):
+                jsons[i][1] = [i for i in jsons[i][1] if 'packageId=null' in i]
+                pmax = len(jsons[i][1])
+                for n in range(0, pmax):
+                    jsons[i][1][n] = str(jsons[i][1][n]).split(', ')
+                print(jsons[i])
+            result = []
+            for i in range(0, jmax):
+                pmax = len(jsons[i][1])
+                for n in range(0, pmax):
+                    for n in jsons[i][1][n]:
+                        if 'УТ' in n:
+                            result.append(jsons[i])
+                            break
+            jmax = len(result)
+            for i in range(0, jmax):
+                pmax = len(result[i][1])
+                if pmax == 1:
+                    result[i][1][0].pop()
+                    result[i][1][0].pop()
+                    result[i][1][0].pop(3)
+                    result[i][1][0][5] = str(result[i][1][0][5]).replace(')]', '')
+                    break
+                for n in range(0, pmax):
+                    result[i][1][n].pop()
+                    result[i][1][n].pop()
+                    result[i][1][n].pop(3)
+                    result[i][1][n][5] = str(result[i][1][n][5]).replace(')]', '')
             str_current_datetime = str(datetime.now()).replace(':', '-')
-            file_name = "newfile " + str_current_datetime + ".json"
+            file_name = "shipment " + str_current_datetime + ".sql"
             with open(file_name, 'w', encoding='utf-8') as file:
-                for i in result:
-                    file.write(f'{i}\n')
-                file.write(f'Дубликаты {duplicates}\n')
+                file.write(f'{result}\n')
             with open(file_name, 'r', encoding='utf-8') as f:
                 old_data = f.read()
-            new_data = old_data.replace("'", '')
-            new_data = new_data.replace('\\xa0', '')
+            new_data = old_data.replace(',', '\n')
+            new_data = new_data.replace("'", '')
+            with open(file_name, 'w', encoding='utf-8') as f:
+                f.write(new_data)
+                print('Готово, создан файл: ' + file_name)
+        except:
+            self.save_log('Некорректный лог')
+
+    def start_app6(self):
+        try:
+            path = self.show_input(self.label_46)
+            jsons = open(path, "r", encoding="utf-8")
+            jsons = json.loads(jsons.read())
+            result = []
+            data = date.today()
+            if 'RECEIPTS' in jsons:
+                confirm = 'RECEIPTS'
+            elif 'SHIPMENTS' in jsons:
+                confirm = 'SHIPMENTS'
+            length2 = len(jsons[confirm][0]['DETAIL'])
+            for n in range(0, length2 - 1):
+                if jsons[confirm][0]['DETAIL'][n]['MAN_DATE'] == '0001-01-01':
+                    result.append(jsons[confirm][0]['DETAIL'][n])
+                elif jsons[confirm][0]['DETAIL'][n]['MAN_DATE'] > str(data):
+                    result.append(jsons[confirm][0]['DETAIL'][n])
+                elif jsons[confirm][0]['DETAIL'][n]['EXP_DATE'] < str(data):
+                    result.append(jsons[confirm][0]['DETAIL'][n])
+                elif jsons[confirm][0]['DETAIL'][n]['MAN_DATE'] < str(data - relativedelta(years=10)):
+                    result.append(jsons[confirm][0]['DETAIL'][n])
+                elif jsons[confirm][0]['DETAIL'][n]['EXP_DATE'] > str(data + relativedelta(years=15)):
+                    result.append(jsons[confirm][0]['DETAIL'][n])
+            str_current_datetime = str(datetime.now()).replace(':', '-')
+            file_name = "shipment " + str_current_datetime + ".sql"
+            with open(file_name, 'w', encoding='utf-8') as file:
+                file.write(f'{result}\n')
+            with open(file_name, 'r', encoding='utf-8') as f:
+                old_data = f.read()
+            new_data = old_data.replace(',', ', \n')
             with open(file_name, 'w', encoding='utf-8') as f:
                 f.write(new_data)
                 self.save_log('Готово, создан файл: ' + file_name)
-
-    def start_app5(self):
-        jsons = open(self.show_input(self.label_44), "r", encoding="utf-8")
-        jsons = jsons.read()
-        jsons = jsons.split(', enriched requests document numbers = [')
-        jsons = jsons[1]
-        jsons = jsons.split(', document')
-        jmax = len(jsons)
-        for i in range(0, jmax):
-            jsons[i] = jsons[i].split(', products=[')
-        jsons.pop(0)
-        jmax = len(jsons)
-        for i in range(0, jmax):
-            jsons[i][1] = jsons[i][1].split('ConfirmShipmentProduct(')
-        for i in range(0, jmax):
-            jsons[i][1] = [i for i in jsons[i][1] if 'packageId=null' in i]
-            pmax = len(jsons[i][1])
-            for n in range(0, pmax):
-                jsons[i][1][n] = str(jsons[i][1][n]).split(', ')
-            print(jsons[i])
-        result = []
-        for i in range(0, jmax):
-            pmax = len(jsons[i][1])
-            for n in range(0, pmax):
-                for n in jsons[i][1][n]:
-                    if 'УТ' in n:
-                        result.append(jsons[i])
-                        break
-        jmax = len(result)
-        for i in range(0, jmax):
-            pmax = len(result[i][1])
-            if pmax == 1:
-                result[i][1][0].pop()
-                result[i][1][0].pop()
-                result[i][1][0].pop(3)
-                result[i][1][0][5] = str(result[i][1][0][5]).replace(')]', '')
-                break
-            for n in range(0, pmax):
-                result[i][1][n].pop()
-                result[i][1][n].pop()
-                result[i][1][n].pop(3)
-                result[i][1][n][5] = str(result[i][1][n][5]).replace(')]', '')
-        str_current_datetime = str(datetime.now()).replace(':', '-')
-        file_name = "shipment " + str_current_datetime + ".sql"
-        with open(file_name, 'w', encoding='utf-8') as file:
-            file.write(f'{result}\n')
-        with open(file_name, 'r', encoding='utf-8') as f:
-            old_data = f.read()
-        new_data = old_data.replace(',', '\n')
-        new_data = new_data.replace("'", '')
-        with open(file_name, 'w', encoding='utf-8') as f:
-            f.write(new_data)
-            print('Готово, создан файл: ' + file_name)
-
-    def start_app6(self):
-        path = self.show_input(self.label_46)
-        jsons = open(path, "r", encoding="utf-8")
-        jsons = json.loads(jsons.read())
-        result = []
-        data = date.today()
-        if 'RECEIPTS' in jsons:
-            confirm = 'RECEIPTS'
-        elif 'SHIPMENTS' in jsons:
-            confirm = 'SHIPMENTS'
-        length = len(jsons[confirm])
-        length2 = len(jsons[confirm][0]['DETAIL'])
-        for n in range(0, length2 - 1):
-            if jsons[confirm][0]['DETAIL'][n]['MAN_DATE'] == '0001-01-01':
-                result.append(jsons[confirm][0]['DETAIL'][n])
-            elif jsons[confirm][0]['DETAIL'][n]['MAN_DATE'] > str(data):
-                result.append(jsons[confirm][0]['DETAIL'][n])
-            elif jsons[confirm][0]['DETAIL'][n]['EXP_DATE'] < str(data):
-                result.append(jsons[confirm][0]['DETAIL'][n])
-            elif jsons[confirm][0]['DETAIL'][n]['MAN_DATE'] < str(data - relativedelta(years=10)):
-                result.append(jsons[confirm][0]['DETAIL'][n])
-            elif jsons[confirm][0]['DETAIL'][n]['EXP_DATE'] > str(data + relativedelta(years=15)):
-                result.append(jsons[confirm][0]['DETAIL'][n])
-        str_current_datetime = str(datetime.now()).replace(':', '-')
-        file_name = "shipment " + str_current_datetime + ".sql"
-        with open(file_name, 'w', encoding='utf-8') as file:
-            file.write(f'{result}\n')
-        with open(file_name, 'r', encoding='utf-8') as f:
-            old_data = f.read()
-        new_data = old_data.replace(',', ', \n')
-        with open(file_name, 'w', encoding='utf-8') as f:
-            f.write(new_data)
-            self.save_log('Готово, создан файл: ' + file_name)
+        except:
+            self.save_log('Некорректный JSON')
 
     def start_app7(self):
-        vpn = self.vpn_on()
-        if vpn is True:
-            pass
+        path = self.show_input(self.label_48)
+        if path == '':
+            self.save_log('Вы не выбрали файл')
+        else:
+            vpn = self.vpn_on()
+            if vpn is True:
+                df = pd.read_excel(path)
+                str_current_datetime = str(datetime.now()).replace(':', '-')
+                file_name = 'manual_shipments ' + str_current_datetime + '.json'
+                shipment_json = [{"shipmentId": "Вставить id перемещения", "documentNumber": "Вставить номер перемещения", "products": []}]
+                for product, quantity, date_1, date_2 in zip(df['productId'], df['totalProductQuantity'], df['productionDate'], df['bestBeforeDate']):
+                    print(product, quantity, date_1, date_2)
+                    date_1 = str(date_1).split(' ')[0] + "T00:00:00.00Z"
+                    date_2 = str(date_2).split(' ')[0] + "T00:00:00.00Z"
+                    search_json = {"productIds": [product]}
+                    response = requests.post('https://ds-metadata.samokat.ru/products/by-ids', json=search_json)
+                    response_json = response.json()
+                    product_yt = response_json[0]['nomenclatureCode']
+                    product_json = {
+                                        "productId": product,
+                                        "productCode": product_yt,
+                                        "totalProductQuantity": quantity,
+                                        "packages": [
+                                          {
+                                            "productQuantity": quantity,
+                                            "productsPerPackageCoefficient": 1
+                                          }
+                                        ],
+                                        "productionDate": date_1,
+                                        "bestBeforeDate": date_2,
+                                        "isDamaged": False
+                                      }
+                    shipment_json[0]['products'].append(product_json)
+                print(shipment_json)
+                with open(file_name, 'w', encoding="utf-8") as f:
+                    f.write(json.dumps(shipment_json, indent=4, ensure_ascii=False))
 
     def start_app8(self):
+        self.logs.clear()
         vpn = self.vpn_on()
         if vpn is True:
-            pass
+            try:
+                with open('token.json') as f:
+                    token = json.load(f)
+                token = token['access_token']
+                guids = self.plainTextEdit.toPlainText().split('\n')
+                if guids == ['']:
+                    self.save_log('Вы не ввели guid ЦФЗ')
+                else:
+                    self.save_log('Вы ввели ' + str(len(guids)) + ' guid ЦФЗ')
+                    invalid_guids = []
+                    result = []
+                    for guid in guids:
+                        if len(guid) == 36:
+                            cfz_setting = []
+                            showcases_search = {"storeId": guid}
+                            receipts_search = {"providerId": 0, "warehouseId": guid}
+                            header = {'Authorization': 'Bearer ' + token}
+                            url_showcases = 'https://order-backoffice-apigateway.samokat.ru/showcases/getBy'
+                            url_receipts = 'https://smk-supportpaymentgw.samokat.ru/receipt/cash-registers/find'
+                            showcase = requests.post(url_showcases, headers=header, json=showcases_search)
+                            receipt = requests.get(url_receipts, headers=header, params=receipts_search)
+                            showcase = showcase.json()
+                            receipt = receipt.json()
+                            cfz_setting.append(showcase)
+                            cfz_setting.append(receipt)
+                            result.append({guid: cfz_setting})
+                        else:
+                            invalid_guids.append(guid)
+                    if invalid_guids == [] or invalid_guids == ['']:
+                        pass
+                    else:
+                        self.save_log(
+                            'В списке присутсвуют некорректные guid: ' + str(', '.join(map(str, invalid_guids))))
+                    str_current_datetime = str(datetime.now()).replace(':', '-')
+                    file_name = 'cfz_settings ' + str_current_datetime + '.json'
+                    with open(file_name, 'w', encoding="utf-8") as f:
+                        f.write(json.dumps(result, indent=4, ensure_ascii=False))
+            except:
+                self.save_log('Что-то пошло не так')
+        else:
+            self.save_log('Вы не авторизовались')
+
+
+
+
+
 

@@ -39,7 +39,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>icon.png</normaloff>icon.png</iconset>
+    <normaloff>icon.ico</normaloff>icon.ico</iconset>
   </property>
   <property name="animated">
    <bool>false</bool>
@@ -202,7 +202,7 @@ border: 4px solid rgb(186, 186, 186);</string>
         <item row="7" column="1">
          <widget class="QCheckBox" name="checkBox">
           <property name="text">
-           <string>CheckBox</string>
+           <string/>
           </property>
          </widget>
         </item>
@@ -588,7 +588,7 @@ box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5),
         <item row="8" column="1">
          <widget class="QCheckBox" name="checkBox_2">
           <property name="text">
-           <string>CheckBox</string>
+           <string/>
           </property>
          </widget>
         </item>
@@ -792,7 +792,7 @@ box-shadow: inset -10px -10px 15px rgba(255, 255, 255, 0.5),
         <item row="8" column="1">
          <widget class="QCheckBox" name="checkBox_3">
           <property name="text">
-           <string>CheckBox</string>
+           <string/>
           </property>
          </widget>
         </item>

@@ -10,12 +10,14 @@ from openpyxl import load_workbook
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 import csv
+import sys
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        uic.loadUi('C:/Users/defuziq/PycharmProjects/pythonProject/static/main.ui', self)
+        main_path = self.resource_path('static/main.ui')
+        uic.loadUi(main_path, self)
         self.action_2.triggered.connect(self.create_window)
         self.pushButton.clicked.connect(self.upload_excel)
         self.pushButton_2.clicked.connect(self.upload_excel2)
@@ -38,6 +40,16 @@ class MainWindow(QMainWindow):
     def create_window(self):
         window = AuthWindow(self)
         window.show()
+
+    @staticmethod
+    def resource_path(relative_path):
+        """ Get absolute path to resource, works for dev and for PyInstaller """
+        try:
+            # PyInstaller creates a temp folder and stores path in _MEIPASS
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+        return os.path.join(base_path, relative_path)
 
     def save_log(self, text):
         self.logs.setReadOnly(False)
@@ -383,96 +395,104 @@ class MainWindow(QMainWindow):
             self.save_log('Что-то пошло не так')
 
     def start_app5(self):
-        try:
-            jsons = open(self.show_input(self.label_44), "r", encoding="utf-8")
-            jsons = jsons.read()
-            jsons = jsons.split(', enriched requests document numbers = [')
-            jsons = jsons[1]
-            jsons = jsons.split(', document')
-            jmax = len(jsons)
-            for i in range(0, jmax):
-                jsons[i] = jsons[i].split(', products=[')
-            jsons.pop(0)
-            jmax = len(jsons)
-            for i in range(0, jmax):
-                jsons[i][1] = jsons[i][1].split('ConfirmShipmentProduct(')
-            for i in range(0, jmax):
-                jsons[i][1] = [i for i in jsons[i][1] if 'packageId=null' in i]
-                pmax = len(jsons[i][1])
-                for n in range(0, pmax):
-                    jsons[i][1][n] = str(jsons[i][1][n]).split(', ')
-                print(jsons[i])
-            result = []
-            for i in range(0, jmax):
-                pmax = len(jsons[i][1])
-                for n in range(0, pmax):
-                    for n in jsons[i][1][n]:
-                        if 'УТ' in n:
-                            result.append(jsons[i])
-                            break
-            jmax = len(result)
-            for i in range(0, jmax):
-                pmax = len(result[i][1])
-                if pmax == 1:
-                    result[i][1][0].pop()
-                    result[i][1][0].pop()
-                    result[i][1][0].pop(3)
-                    result[i][1][0][5] = str(result[i][1][0][5]).replace(')]', '')
-                    break
-                for n in range(0, pmax):
-                    result[i][1][n].pop()
-                    result[i][1][n].pop()
-                    result[i][1][n].pop(3)
-                    result[i][1][n][5] = str(result[i][1][n][5]).replace(')]', '')
-            str_current_datetime = str(datetime.now()).replace(':', '-')
-            file_name = "shipment " + str_current_datetime + ".sql"
-            with open(file_name, 'w', encoding='utf-8') as file:
-                file.write(f'{result}\n')
-            with open(file_name, 'r', encoding='utf-8') as f:
-                old_data = f.read()
-            new_data = old_data.replace(',', '\n')
-            new_data = new_data.replace("'", '')
-            with open(file_name, 'w', encoding='utf-8') as f:
-                f.write(new_data)
-                print('Готово, создан файл: ' + file_name)
-        except:
-            self.save_log('Некорректный лог')
+        path = self.show_input(self.label_44)
+        if path == '':
+            self.save_log('Вы не выбрали файл')
+        else:
+            try:
+                jsons = open(self.show_input(self.label_44), "r", encoding="utf-8")
+                jsons = jsons.read()
+                jsons = jsons.split(', enriched requests document numbers = [')
+                jsons = jsons[1]
+                jsons = jsons.split(', document')
+                jmax = len(jsons)
+                for i in range(0, jmax):
+                    jsons[i] = jsons[i].split(', products=[')
+                jsons.pop(0)
+                jmax = len(jsons)
+                for i in range(0, jmax):
+                    jsons[i][1] = jsons[i][1].split('ConfirmShipmentProduct(')
+                for i in range(0, jmax):
+                    jsons[i][1] = [i for i in jsons[i][1] if 'packageId=null' in i]
+                    pmax = len(jsons[i][1])
+                    for n in range(0, pmax):
+                        jsons[i][1][n] = str(jsons[i][1][n]).split(', ')
+                    print(jsons[i])
+                result = []
+                for i in range(0, jmax):
+                    pmax = len(jsons[i][1])
+                    for n in range(0, pmax):
+                        for n in jsons[i][1][n]:
+                            if 'УТ' in n:
+                                result.append(jsons[i])
+                                break
+                jmax = len(result)
+                for i in range(0, jmax):
+                    pmax = len(result[i][1])
+                    if pmax == 1:
+                        result[i][1][0].pop()
+                        result[i][1][0].pop()
+                        result[i][1][0].pop(3)
+                        result[i][1][0][5] = str(result[i][1][0][5]).replace(')]', '')
+                        break
+                    for n in range(0, pmax):
+                        result[i][1][n].pop()
+                        result[i][1][n].pop()
+                        result[i][1][n].pop(3)
+                        result[i][1][n][5] = str(result[i][1][n][5]).replace(')]', '')
+                str_current_datetime = str(datetime.now()).replace(':', '-')
+                file_name = "shipment " + str_current_datetime + ".sql"
+                with open(file_name, 'w', encoding='utf-8') as file:
+                    file.write(f'{result}\n')
+                with open(file_name, 'r', encoding='utf-8') as f:
+                    old_data = f.read()
+                new_data = old_data.replace(',', '\n')
+                new_data = new_data.replace("'", '')
+                with open(file_name, 'w', encoding='utf-8') as f:
+                    f.write(new_data)
+                    print('Готово, создан файл: ' + file_name)
+            except:
+                self.save_log('Некорректный лог')
 
     def start_app6(self):
-        try:
-            path = self.show_input(self.label_46)
-            jsons = open(path, "r", encoding="utf-8")
-            jsons = json.loads(jsons.read())
-            result = []
-            data = date.today()
-            if 'RECEIPTS' in jsons:
-                confirm = 'RECEIPTS'
-            elif 'SHIPMENTS' in jsons:
-                confirm = 'SHIPMENTS'
-            length2 = len(jsons[confirm][0]['DETAIL'])
-            for n in range(0, length2 - 1):
-                if jsons[confirm][0]['DETAIL'][n]['MAN_DATE'] == '0001-01-01':
-                    result.append(jsons[confirm][0]['DETAIL'][n])
-                elif jsons[confirm][0]['DETAIL'][n]['MAN_DATE'] > str(data):
-                    result.append(jsons[confirm][0]['DETAIL'][n])
-                elif jsons[confirm][0]['DETAIL'][n]['EXP_DATE'] < str(data):
-                    result.append(jsons[confirm][0]['DETAIL'][n])
-                elif jsons[confirm][0]['DETAIL'][n]['MAN_DATE'] < str(data - relativedelta(years=10)):
-                    result.append(jsons[confirm][0]['DETAIL'][n])
-                elif jsons[confirm][0]['DETAIL'][n]['EXP_DATE'] > str(data + relativedelta(years=15)):
-                    result.append(jsons[confirm][0]['DETAIL'][n])
-            str_current_datetime = str(datetime.now()).replace(':', '-')
-            file_name = "shipment " + str_current_datetime + ".sql"
-            with open(file_name, 'w', encoding='utf-8') as file:
-                file.write(f'{result}\n')
-            with open(file_name, 'r', encoding='utf-8') as f:
-                old_data = f.read()
-            new_data = old_data.replace(',', ', \n')
-            with open(file_name, 'w', encoding='utf-8') as f:
-                f.write(new_data)
-                self.save_log('Готово, создан файл: ' + file_name)
-        except:
-            self.save_log('Некорректный JSON')
+        path = self.show_input(self.label_46)
+        if path == '':
+            self.save_log('Вы не выбрали файл')
+        else:
+            try:
+                path = self.show_input(self.label_46)
+                jsons = open(path, "r", encoding="utf-8")
+                jsons = json.loads(jsons.read())
+                result = []
+                data = date.today()
+                if 'RECEIPTS' in jsons:
+                    confirm = 'RECEIPTS'
+                elif 'SHIPMENTS' in jsons:
+                    confirm = 'SHIPMENTS'
+                length2 = len(jsons[confirm][0]['DETAIL'])
+                for n in range(0, length2 - 1):
+                    if jsons[confirm][0]['DETAIL'][n]['MAN_DATE'] == '0001-01-01':
+                        result.append(jsons[confirm][0]['DETAIL'][n])
+                    elif jsons[confirm][0]['DETAIL'][n]['MAN_DATE'] > str(data):
+                        result.append(jsons[confirm][0]['DETAIL'][n])
+                    elif jsons[confirm][0]['DETAIL'][n]['EXP_DATE'] < str(data):
+                        result.append(jsons[confirm][0]['DETAIL'][n])
+                    elif jsons[confirm][0]['DETAIL'][n]['MAN_DATE'] < str(data - relativedelta(years=10)):
+                        result.append(jsons[confirm][0]['DETAIL'][n])
+                    elif jsons[confirm][0]['DETAIL'][n]['EXP_DATE'] > str(data + relativedelta(years=15)):
+                        result.append(jsons[confirm][0]['DETAIL'][n])
+                str_current_datetime = str(datetime.now()).replace(':', '-')
+                file_name = "shipment " + str_current_datetime + ".sql"
+                with open(file_name, 'w', encoding='utf-8') as file:
+                    file.write(f'{result}\n')
+                with open(file_name, 'r', encoding='utf-8') as f:
+                    old_data = f.read()
+                new_data = old_data.replace(',', ', \n')
+                with open(file_name, 'w', encoding='utf-8') as f:
+                    f.write(new_data)
+                    self.save_log('Готово, создан файл: ' + file_name)
+            except:
+                self.save_log('Некорректный JSON')
 
     def start_app7(self):
         path = self.show_input(self.label_48)
@@ -508,9 +528,9 @@ class MainWindow(QMainWindow):
                                         "isDamaged": False
                                       }
                     shipment_json[0]['products'].append(product_json)
-                print(shipment_json)
                 with open(file_name, 'w', encoding="utf-8") as f:
                     f.write(json.dumps(shipment_json, indent=4, ensure_ascii=False))
+                self.save_log('Готово, создан файл: ' + file_name)
 
     def start_app8(self):
         self.logs.clear()
@@ -527,6 +547,8 @@ class MainWindow(QMainWindow):
                     self.save_log('Вы ввели ' + str(len(guids)) + ' guid ЦФЗ')
                     invalid_guids = []
                     result = []
+                    count_showcases = 0
+                    count_receipts = 0
                     for guid in guids:
                         if len(guid) == 36:
                             cfz_setting = []
@@ -538,7 +560,15 @@ class MainWindow(QMainWindow):
                             showcase = requests.post(url_showcases, headers=header, json=showcases_search)
                             receipt = requests.get(url_receipts, headers=header, params=receipts_search)
                             showcase = showcase.json()
+                            if showcase == {"items": []}:
+                                pass
+                            else:
+                                count_showcases += 1
                             receipt = receipt.json()
+                            if receipt == {"error": "NOT_FOUND", "value": None}:
+                                pass
+                            else:
+                                count_receipts += 1
                             cfz_setting.append(showcase)
                             cfz_setting.append(receipt)
                             result.append({guid: cfz_setting})
@@ -552,14 +582,9 @@ class MainWindow(QMainWindow):
                     str_current_datetime = str(datetime.now()).replace(':', '-')
                     file_name = 'cfz_settings ' + str_current_datetime + '.json'
                     with open(file_name, 'w', encoding="utf-8") as f:
+                        f.write(f'Кол-во витрин: {count_showcases}\n')
+                        f.write(f'Кол-во касс: {count_receipts}\n')
                         f.write(json.dumps(result, indent=4, ensure_ascii=False))
+                    self.save_log('Готово, создан файл: ' + file_name)
             except:
-                self.save_log('Что-то пошло не так')
-        else:
-            self.save_log('Вы не авторизовались')
-
-
-
-
-
-
+                self.save_log('Вы не авторизовались')

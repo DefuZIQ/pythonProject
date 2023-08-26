@@ -1,14 +1,27 @@
 from PyQt5.QtWidgets import QDialog
 import requests
 import json
+import sys
+import os
 from PyQt5 import uic
 
 
 class AuthWindow(QDialog):
     def __init__(self, parent):
         super().__init__(parent)
-        uic.loadUi('C:/Users/defuziq/PycharmProjects/pythonProject/static/auth.ui', self)
+        auth_path = self.resource_path('static/auth.ui')
+        uic.loadUi(auth_path, self)
         self.pushButton.clicked.connect(self.authorization)
+
+    @staticmethod
+    def resource_path(relative_path):
+        """ Get absolute path to resource, works for dev and for PyInstaller """
+        try:
+            # PyInstaller creates a temp folder and stores path in _MEIPASS
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+        return os.path.join(base_path, relative_path)
 
     def vpn_on(self):
         try:

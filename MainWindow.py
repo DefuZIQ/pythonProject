@@ -43,9 +43,7 @@ class MainWindow(QMainWindow):
 
     @staticmethod
     def resource_path(relative_path):
-        """ Get absolute path to resource, works for dev and for PyInstaller """
         try:
-            # PyInstaller creates a temp folder and stores path in _MEIPASS
             base_path = sys._MEIPASS
         except Exception:
             base_path = os.path.abspath(".")
@@ -58,7 +56,7 @@ class MainWindow(QMainWindow):
 
     def path_file(self, label, label2=None, label3=None, filetype=0):
         self.logs.clear()
-        self.save_log(text='Идёт чтение файла')
+        self.save_log('Идёт чтение файла')
         filetypes = [(('Excel', '*.xlsx'), ('Excel', '*.xls'), ('Excel', '*.xlsm')),
                      (('txt', '*.txt'), ('csv', '*.csv'))]
         path = filedialog.askopenfilename(title='Выбрать файл', initialdir='', filetypes=filetypes[filetype])
@@ -97,7 +95,7 @@ class MainWindow(QMainWindow):
                     sheet_row.append({sheet: array})
                 label2.setText(str(sheets))
                 label3.setText(str(sheet_row))
-            except:
+            except Exception:
                 self.logs.clear()
                 label.setText('')
                 label2.setText('')
@@ -129,7 +127,7 @@ class MainWindow(QMainWindow):
         try:
             value = int(value)
             return value
-        except:
+        except Exception:
             return 'Invalid'
 
     @staticmethod
@@ -214,9 +212,10 @@ class MainWindow(QMainWindow):
 
     def vpn_on(self):
         try:
-            requests.get('https://order-backoffice-apigateway.samokat.ru/swagger-ui/index.html?configUrl=%2Fv3%2Fapi-docs%2Fswagger-config&urls.primaryName=backoffice-public-api')
+            requests.get('https://order-backoffice-apigateway.samokat.ru/swagger-ui/index.html?'
+                         'configUrl=%2Fv3%2Fapi-docs%2Fswagger-config&urls.primaryName=backoffice-public-api')
             return True
-        except:
+        except Exception:
             self.save_log('Включите vpn')
             return False
 
@@ -244,7 +243,7 @@ class MainWindow(QMainWindow):
             return df
 
     def validate_df(self, df):
-        symbols = [',', ';', ':', ' ', '\.', '\(', '\)']
+        symbols = [',', ';', ':', ' ', '\\.', '\\(', '\\)']
         for symbol in symbols:
             df = df.replace(symbol, '', regex=True)
         self.save_log('Файл провалидирован')
@@ -313,7 +312,7 @@ class MainWindow(QMainWindow):
                     f.write(new_data)
                     self.save_log('Готово, создан файл: ' + file_name)
                 self.create_csv(self.checkBox, result, str)
-        except:
+        except Exception:
             self.save_log('Что-то пошло не так')
 
     def start_app2(self):
@@ -330,7 +329,8 @@ class MainWindow(QMainWindow):
                 with open(file_name, 'w', encoding='utf-8') as file:
                     for i in result:
                         file.write(
-                            f'{{"promotionId": "{self.show_input(self.lineEdit_8)}", "userIds": {i}, "userType": "SAMOKAT", "disableNotifications": true}}\n')
+                            f'{{"promotionId": "{self.show_input(self.lineEdit_8)}", "userIds": {i}, '
+                            f'"userType": "SAMOKAT", "disableNotifications": true}}\n')
                     file.write(f'Дубликаты {duplicates}\n')
                 with open(file_name, 'r', encoding='utf-8') as f:
                     old_data = f.read()
@@ -339,7 +339,7 @@ class MainWindow(QMainWindow):
                     f.write(new_data)
                     self.save_log('Готово, создан файл: ' + file_name)
                 self.create_csv(self.checkBox_2, result, int)
-        except:
+        except Exception:
             self.save_log('Что-то пошло не так')
 
     def start_app3(self):
@@ -347,7 +347,8 @@ class MainWindow(QMainWindow):
             valid = self.validate_input(label=self.label_31, line=self.lineEdit_9, line2=self.lineEdit_10,
                                         line3=self.lineEdit_11)
             if valid is True:
-                df = self.validate_df(self.get_dataframe(label=self.label_31, line=self.lineEdit_9, line2=self.lineEdit_10))
+                df = self.validate_df(self.get_dataframe(label=self.label_31, line=self.lineEdit_9,
+                                                         line2=self.lineEdit_10))
                 duplicates = self.find_duplicates(df)
                 df = self.drop_duplicates(df)
                 result = self.df_slice(df, self.lineEdit_11, int)
@@ -356,7 +357,8 @@ class MainWindow(QMainWindow):
                 with open(file_name, 'w', encoding='utf-8') as file:
                     for i in result:
                         file.write(
-                            f'{{"userIds": {i}, "userType": "SAMOKAT", "bannerId": "{self.show_input(self.lineEdit_12)}"}}\n')
+                            f'{{"userIds": {i}, "userType": "SAMOKAT", "bannerId": '
+                            f'"{self.show_input(self.lineEdit_12)}"}}\n')
                     file.write(f'Дубликаты {duplicates}\n')
                 print(1)
                 with open(file_name, 'r', encoding='utf-8') as f:
@@ -366,7 +368,7 @@ class MainWindow(QMainWindow):
                     f.write(new_data)
                     self.save_log('Готово, создан файл: ' + file_name)
                 self.create_csv(self.checkBox_3, result, int)
-        except:
+        except Exception:
             self.save_log('Что-то пошло не так')
 
     def start_app4(self):
@@ -374,7 +376,8 @@ class MainWindow(QMainWindow):
             valid = self.validate_input(label=self.label_40, line=self.lineEdit_13, line2=self.lineEdit_14,
                                         line3=self.lineEdit_15)
             if valid is True:
-                df = self.validate_df(self.get_dataframe(label=self.label_40, line=self.lineEdit_13, line2=self.lineEdit_14))
+                df = self.validate_df(self.get_dataframe(label=self.label_40, line=self.lineEdit_13,
+                                                         line2=self.lineEdit_14))
                 duplicates = self.find_duplicates(df)
                 df = self.drop_duplicates(df)
                 result = self.df_slice(df, self.lineEdit_15, int)
@@ -391,7 +394,7 @@ class MainWindow(QMainWindow):
                 with open(file_name, 'w', encoding='utf-8') as f:
                     f.write(new_data)
                     self.save_log('Готово, создан файл: ' + file_name)
-        except:
+        except Exception:
             self.save_log('Что-то пошло не так')
 
     def start_app5(self):
@@ -402,44 +405,34 @@ class MainWindow(QMainWindow):
             try:
                 jsons = open(self.show_input(self.label_44), "r", encoding="utf-8")
                 jsons = jsons.read()
-                jsons = jsons.split(', enriched requests document numbers = [')
+                jsons = jsons.replace(' ', '')
+                jsons = jsons.replace('ConfirmDetailRequest(', '')
+                jsons = jsons.split(',detail=[')
                 jsons = jsons[1]
-                jsons = jsons.split(', document')
-                jmax = len(jsons)
-                for i in range(0, jmax):
-                    jsons[i] = jsons[i].split(', products=[')
-                jsons.pop(0)
-                jmax = len(jsons)
-                for i in range(0, jmax):
-                    jsons[i][1] = jsons[i][1].split('ConfirmShipmentProduct(')
-                for i in range(0, jmax):
-                    jsons[i][1] = [i for i in jsons[i][1] if 'packageId=null' in i]
-                    pmax = len(jsons[i][1])
-                    for n in range(0, pmax):
-                        jsons[i][1][n] = str(jsons[i][1][n]).split(', ')
-                    print(jsons[i])
+                jsons = jsons.split('])]),')[0]
+                jsons = jsons.split('),')
+                jsons2 = jsons
                 result = []
-                for i in range(0, jmax):
-                    pmax = len(jsons[i][1])
-                    for n in range(0, pmax):
-                        for n in jsons[i][1][n]:
-                            if 'УТ' in n:
-                                result.append(jsons[i])
-                                break
-                jmax = len(result)
-                for i in range(0, jmax):
-                    pmax = len(result[i][1])
-                    if pmax == 1:
-                        result[i][1][0].pop()
-                        result[i][1][0].pop()
-                        result[i][1][0].pop(3)
-                        result[i][1][0][5] = str(result[i][1][0][5]).replace(')]', '')
-                        break
-                    for n in range(0, pmax):
-                        result[i][1][n].pop()
-                        result[i][1][n].pop()
-                        result[i][1][n].pop(3)
-                        result[i][1][n][5] = str(result[i][1][n][5]).replace(')]', '')
+                for i, m in zip(jsons, jsons2):
+                    i = i.split(',')
+                    m = m.split(',')
+                    i[7] = i[7].split('=')
+                    i[7] = i[7][1].split('.')
+                    i[2] = i[2].split('=')
+                    i[2] = i[2][1].split('.')
+                    if i[7][0] == '0':
+                        if i[7][1] == '00':
+                            result.append(m)
+                        else:
+                            result.append(m)
+                    elif i[2][0] == i[7][0] and i[2][1] == i[7][1]:
+                        result.append(m)
+                    else:
+                        if i[7][1] == '00':
+                            continue
+                        else:
+                            result.append(m)
+
                 str_current_datetime = str(datetime.now()).replace(':', '-')
                 file_name = "shipment " + str_current_datetime + ".sql"
                 with open(file_name, 'w', encoding='utf-8') as file:
@@ -450,8 +443,8 @@ class MainWindow(QMainWindow):
                 new_data = new_data.replace("'", '')
                 with open(file_name, 'w', encoding='utf-8') as f:
                     f.write(new_data)
-                    print('Готово, создан файл: ' + file_name)
-            except:
+                    self.save_log('Готово, создан файл: ' + file_name)
+            except Exception:
                 self.save_log('Некорректный лог')
 
     def start_app6(self):
@@ -491,7 +484,7 @@ class MainWindow(QMainWindow):
                 with open(file_name, 'w', encoding='utf-8') as f:
                     f.write(new_data)
                     self.save_log('Готово, создан файл: ' + file_name)
-            except:
+            except Exception:
                 self.save_log('Некорректный JSON')
 
     def start_app7(self):
@@ -504,8 +497,10 @@ class MainWindow(QMainWindow):
                 df = pd.read_excel(path)
                 str_current_datetime = str(datetime.now()).replace(':', '-')
                 file_name = 'manual_shipments ' + str_current_datetime + '.json'
-                shipment_json = [{"shipmentId": "Вставить id перемещения", "documentNumber": "Вставить номер перемещения", "products": []}]
-                for product, quantity, date_1, date_2 in zip(df['productId'], df['totalProductQuantity'], df['productionDate'], df['bestBeforeDate']):
+                shipment_json = [{"shipmentId": "Вставить id перемещения",
+                                  "documentNumber": "Вставить номер перемещения", "products": []}]
+                for product, quantity, date_1, date_2 in zip(df['productId'], df['totalProductQuantity'],
+                                                             df['productionDate'], df['bestBeforeDate']):
                     print(product, quantity, date_1, date_2)
                     date_1 = str(date_1).split(' ')[0] + "T00:00:00.00Z"
                     date_2 = str(date_2).split(' ')[0] + "T00:00:00.00Z"
@@ -586,5 +581,5 @@ class MainWindow(QMainWindow):
                         f.write(f'Кол-во касс: {count_receipts}\n')
                         f.write(json.dumps(result, indent=4, ensure_ascii=False))
                     self.save_log('Готово, создан файл: ' + file_name)
-            except:
+            except Exception:
                 self.save_log('Вы не авторизовались')

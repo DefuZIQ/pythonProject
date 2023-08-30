@@ -5,7 +5,6 @@ import sys
 import os
 from PyQt5 import uic
 
-
 class AuthWindow(QDialog):
     def __init__(self, parent):
         super().__init__(parent)
@@ -27,9 +26,12 @@ class AuthWindow(QDialog):
         try:
             requests.get('https://order-backoffice-apigateway.samokat.ru/swagger-ui/index.html?configUrl=%2Fv3%2Fapi-docs%2Fswagger-config&urls.primaryName=backoffice-public-api')
             return True
-        except:
+        except Exception:
             self.save_log('Включите vpn')
             return False
+
+    def save_log(self, text):
+        self.logs.setText(text)
 
     def authorization(self):
         vpn = self.vpn_on()
@@ -39,8 +41,18 @@ class AuthWindow(QDialog):
             data = {"username": username , "password": password}
             response = requests.post('https://order-backoffice-apigateway.samokat.ru/oauth/tokenByPassword', data=data)
             token = response.json()
-            with open('token.json', 'w', encoding="utf-8") as f:
-                f.write(json.dumps(token, indent=4, ensure_ascii=False))
-
-
-
+            if token == {'code': 'INVALID_CREDENTIALS', 'message': 'Invalid credentials'}:
+                print(token)
+                self.logs.setStyleSheet("color: red;")
+                self.save_log('Вы ввели неправильный логин или пароль')
+            elif token == {'code': 'INTERNAL_SERVER_ERROR', 'message':
+                    'Read timed out executing POST https://idm-auth-employee.samokat.ru/oauth/tokenByPassword'}:
+                print(token)
+                self.logs.setStyleSheet("color: red;")
+                self.save_log('Не успешно, попробуйте еще раз')
+            else:
+                print(token)
+                self.logs.setStyleSheet("color: green;")
+                self.save_log('Вы успешно авторизовались')
+                with open('token.json', 'w', encoding="utf-8") as f:
+                    f.write(json.dumps(token, indent=4, ensure_ascii=False))

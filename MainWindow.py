@@ -11,6 +11,7 @@ import pandas as pd
 from dateutil.relativedelta import relativedelta
 import csv
 import sys
+from decimal import Decimal
 
 
 class MainWindow(QMainWindow):
@@ -31,7 +32,7 @@ class MainWindow(QMainWindow):
         self.start_2.clicked.connect(self.start_app2)
         self.start_3.clicked.connect(self.start_app3)
         self.start_4.clicked.connect(self.start_app4)
-        self.start_5.clicked.connect(self.start_app5)
+        self.start_5.clicked.connect(self.start_test)
         self.start_6.clicked.connect(self.start_app6)
         self.start_7.clicked.connect(self.start_app7)
         self.start_8.clicked.connect(self.start_app8)
@@ -434,7 +435,7 @@ class MainWindow(QMainWindow):
                             result.append(m)
 
                 str_current_datetime = str(datetime.now()).replace(':', '-')
-                file_name = "shipment " + str_current_datetime + ".sql"
+                file_name = "shipment(YT) " + str_current_datetime + ".sql"
                 with open(file_name, 'w', encoding='utf-8') as file:
                     file.write(f'{result}\n')
                 with open(file_name, 'r', encoding='utf-8') as f:
@@ -446,6 +447,56 @@ class MainWindow(QMainWindow):
                     self.save_log('Готово, создан файл: ' + file_name)
             except Exception:
                 self.save_log('Некорректный лог')
+
+    def start_test(self):
+        path = self.show_input(self.label_44)
+        vpn = self.vpn_on()
+        if vpn:
+            if path == '':
+                self.save_log('Вы не выбрали файл')
+            else:
+                try:
+                    jsons = open(path, "r", encoding="utf-8")
+                    jsons = json.loads(jsons.read())
+                    result = []
+                    for shipment in jsons['SHIPMENTS']:
+                        items = []
+                        temp = []
+                        for item in shipment['DETAIL']:
+                            valid_packages = []
+                            search = {"filter": {"nomenclatureCodes": [item['ITEM']]}, "limit": 10}
+                            response = requests.post('https://ds-metadata.samokat.ru/products/by-filter', json=search)
+                            response_json = response.json()
+                            packages = response_json['data'][0]['packages']
+                            flag = False
+                            for package in packages:
+                                if package['packageType'] == item['OP_QTY_UM']:
+                                    quantity = Decimal(item['QUANTITY'].split('.')[0]).quantize(Decimal("1.00"))
+                                    op_qty = Decimal(item['OP_QTY'].split('.')[0]).quantize(Decimal("1.00"))
+                                    coefficient = package['coefficient']
+                                    if quantity * op_qty == coefficient:
+                                        valid_packages.append(True)
+                                    else:
+                                        valid_packages.append(False)
+                            if True not in valid_packages:
+                                pack = {
+                                    'packages': [package['name'].replace('\xa0', '') for package in packages]}
+                                item.update(pack)
+                                items.append(item)
+                        for x in items:
+                            if x not in temp:
+                                temp.append(x)
+                        items = temp
+                        result.append({shipment['SHIPMENT_ID']: items})
+                    str_current_datetime = str(datetime.now()).replace(':', '-')
+                    file_name = "shipment(YT) " + str_current_datetime + ".sql"
+                    with open(file_name, 'w', encoding="utf-8") as f:
+                        f.write(json.dumps(result, indent=4, ensure_ascii=False))
+                        self.save_log('Готово, создан файл: ' + file_name)
+
+                except Exception:
+                    self.save_log('Некорректный JSON или что-то пошло не так')
+
 
     def start_app6(self):
         path = self.show_input(self.label_46)
@@ -475,7 +526,7 @@ class MainWindow(QMainWindow):
                     elif jsons[confirm][0]['DETAIL'][n]['EXP_DATE'] > str(data + relativedelta(years=15)):
                         result.append(jsons[confirm][0]['DETAIL'][n])
                 str_current_datetime = str(datetime.now()).replace(':', '-')
-                file_name = "shipment " + str_current_datetime + ".sql"
+                file_name = "shipment(date) " + str_current_datetime + ".sql"
                 with open(file_name, 'w', encoding='utf-8') as file:
                     file.write(f'{result}\n')
                 with open(file_name, 'r', encoding='utf-8') as f:

@@ -14,7 +14,6 @@ import sys
 from decimal import Decimal
 
 
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -484,7 +483,6 @@ class MainWindow(QMainWindow):
                 except Exception:
                     self.save_log('Некорректный JSON или что-то пошло не так')
 
-
     def start_app6(self):
         path = self.show_input(self.label_46)
         if path == '':
@@ -621,6 +619,3 @@ class MainWindow(QMainWindow):
                     self.save_log('Готово, создан файл: ' + file_name)
             except Exception:
                 self.save_log('Вы не авторизовались')
-
-
-

@@ -38,15 +38,15 @@ class AuthWindow(QDialog):
         if vpn is True:
             username = self.lineEdit.text()
             password = self.lineEdit_2.text()
-            data = {"username": username , "password": password}
-            response = requests.post('https://order-backoffice-apigateway.samokat.ru/oauth/tokenByPassword', data=data)
+            data = {"username": username, "password": password}
+            response = requests.post('https://order-backoffice-apigateway.samokat.ru/'
+                                     'oauth/tokenByPassword', data=data)
             token = response.json()
             if token == {'code': 'INVALID_CREDENTIALS', 'message': 'Invalid credentials'}:
                 print(token)
                 self.logs.setStyleSheet("color: red;")
                 self.save_log('Вы ввели неправильный логин или пароль')
-            elif token == {'code': 'INTERNAL_SERVER_ERROR', 'message':
-                    'Read timed out executing POST https://idm-auth-employee.samokat.ru/oauth/tokenByPassword'}:
+            elif token == {'code': 'INTERNAL_SERVER_ERROR', 'message': 'Read timed out executing POST https://idm-auth-employee.samokat.ru/oauth/tokenByPassword'}:
                 print(token)
                 self.logs.setStyleSheet("color: red;")
                 self.save_log('Не успешно, попробуйте еще раз')

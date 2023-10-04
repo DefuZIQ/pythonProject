@@ -32,7 +32,7 @@ class MainWindow(QMainWindow):
         self.start_2.clicked.connect(self.start_app2)
         self.start_3.clicked.connect(self.start_app3)
         self.start_4.clicked.connect(self.start_app4)
-        self.start_5.clicked.connect(self.start_app5)
+        self.start_5.clicked.connect(self.start_test)
         self.start_6.clicked.connect(self.start_app6)
         self.start_7.clicked.connect(self.start_app7)
         self.start_8.clicked.connect(self.start_app8)
@@ -483,6 +483,91 @@ class MainWindow(QMainWindow):
                 except Exception:
                     self.save_log('Некорректный JSON или что-то пошло не так')
 
+    def start_test(self):
+        path = self.show_input(self.label_44)
+        vpn = self.vpn_on()
+        if vpn:
+            if path == '':
+                self.save_log('Вы не выбрали файл')
+            else:
+                try:
+                    text = open(path, "r", encoding="utf-8")
+                    text = text.read().split('\n')
+                    result = []
+                    for js in text:
+                        jsons = json.loads(js)
+                        for shipment in jsons['SHIPMENTS']:
+                            items = []
+                            temp = []
+                            temp_arr = {}
+                            names = [item['ITEM'] for item in shipment['DETAIL']]
+                            search = {"filter": {"nomenclatureCodes": names}, "limit": len(names)}
+                            response = requests.post('https://ds-metadata.samokat.ru/products/by-filter', json=search)
+                            response_json = response.json()
+                            for item, name in zip(shipment['DETAIL'], names):
+                                if names.count(name) > 1:
+                                    if name in [key for key, value in temp_arr.items()]:
+                                        temp_arr[name].append(item)
+                                    else:
+                                        temp_arr.update({name: [item]})
+                                else:
+                                    valid_packages = []
+                                    packages = [i['packages'] for i in response_json['data'] if i['nomenclatureCode'] == name][0]
+                                    for package in packages:
+                                        if package['packageType'] == item['OP_QTY_UM']:
+                                            quantity = Decimal(item['QUANTITY'].split('.')[0]).quantize(Decimal("1.00"))
+                                            op_qty = Decimal(item['OP_QTY'].split('.')[0]).quantize(Decimal("1.00"))
+                                            coefficient = package['coefficient']
+                                            if coefficient * op_qty == quantity:
+                                                valid_packages.append(True)
+                                            else:
+                                                valid_packages.append(False)
+                                    if True not in valid_packages:
+                                        pack = {
+                                            'packages': [package['name'].replace('\xa0', '') for package in packages]}
+                                        item.update(pack)
+                                        items.append(item)
+                            for e in temp_arr:
+                                quantity = 0
+                                op_qty = 0
+                                valid_packages = []
+                                packages = [i['packages'] for i in response_json['data'] if i['nomenclatureCode'] == e][0]
+                                for i in temp_arr[e]:
+                                    quantity += Decimal(i['QUANTITY']).quantize(Decimal("1.00"))
+                                    op_qty += Decimal(i['OP_QTY']).quantize(Decimal("1.00"))
+                                    for package in packages:
+                                        if package['packageType'] == i['OP_QTY_UM']:
+                                            coefficient = package['coefficient']
+                                            if coefficient * op_qty == quantity:
+                                                valid_packages.append(True)
+                                            else:
+                                                valid_packages.append(False)
+                                if True not in valid_packages:
+                                    pack = {
+                                        'packages': [package['name'].replace('\xa0', '') for package in
+                                                     packages]}
+                                    temp_arr[e].append(pack)
+                                    items.append(temp_arr[e])
+                            for x in items:
+                                if x not in temp:
+                                    temp.append(x)
+                            items = temp
+                            result.append({shipment['SHIPMENT_ID']: items})
+                    for res in result:
+                        res = res[list(res.keys())[0]]
+                        print(res)
+                        print(len(res))
+                        res.insert(0,{'count': len(res)})
+                        print(res)
+                    print(result)
+                    str_current_datetime = str(datetime.now()).replace(':', '-')
+                    file_name = "shipment(YT) " + str_current_datetime + ".sql"
+                    with open(file_name, 'w', encoding="utf-8") as f:
+                        f.write(json.dumps(result, indent=4, ensure_ascii=False))
+                        self.save_log('Готово, создан файл: ' + file_name)
+                except Exception:
+                    self.save_log('Некорректный JSON или что-то пошло не так')
+
     def start_app6(self):
         path = self.show_input(self.label_46)
         if path == '':
@@ -562,6 +647,49 @@ class MainWindow(QMainWindow):
                 with open(file_name, 'w', encoding="utf-8") as f:
                     f.write(json.dumps(shipment_json, indent=4, ensure_ascii=False))
                 self.save_log('Готово, создан файл: ' + file_name)
+
+    def start_test2(self):
+        path = self.show_input(self.label_48)
+        if path == '':
+            self.save_log('Вы не выбрали файл')
+        else:
+            vpn = self.vpn_on()
+            if vpn is True:
+                try:
+                    df = pd.read_excel(path)
+                    str_current_datetime = str(datetime.now()).replace(':', '-')
+                    file_name = 'manual_shipments ' + str_current_datetime + '.json'
+                    shipment_json = [{"shipmentId": "Вставить id перемещения",
+                                      "documentNumber": "Вставить номер перемещения", "products": []}]
+                    for product, quantity, date_1, date_2 in zip(df['productId'], df['totalProductQuantity'],
+                                                                 df['productionDate'], df['bestBeforeDate']):
+                        print(product, quantity, date_1, date_2)
+                        date_1 = str(date_1).split(' ')[0] + "T00:00:00.00Z"
+                        date_2 = str(date_2).split(' ')[0] + "T00:00:00.00Z"
+                        search_json = {"productIds": [product]}
+                        response = requests.post('https://ds-metadata.samokat.ru/products/by-ids', json=search_json)
+                        response_json = response.json()
+                        product_yt = response_json[0]['nomenclatureCode']
+                        product_json = {
+                            "productId": product,
+                            "productCode": product_yt,
+                            "totalProductQuantity": quantity,
+                            "packages": [
+                                {
+                                    "productQuantity": quantity,
+                                    "productsPerPackageCoefficient": 1
+                                }
+                            ],
+                            "productionDate": date_1,
+                            "bestBeforeDate": date_2,
+                            "isDamaged": False
+                        }
+                        shipment_json[0]['products'].append(product_json)
+                    with open(file_name, 'w', encoding="utf-8") as f:
+                        f.write(json.dumps(shipment_json, indent=4, ensure_ascii=False))
+                    self.save_log('Готово, создан файл: ' + file_name)
+                except Exception:
+                    self.save_log('Некорректный excel файл')
 
     def start_app8(self):
         self.logs.clear()

@@ -34,7 +34,7 @@ class MainWindow(QMainWindow):
         self.start_4.clicked.connect(self.start_app4)
         self.start_5.clicked.connect(self.start_test)
         self.start_6.clicked.connect(self.start_app6)
-        self.start_7.clicked.connect(self.start_app7)
+        self.start_7.clicked.connect(self.start_test2)
         self.start_8.clicked.connect(self.start_app8)
         # Надо использовать QtWidget.setToolTip('text')
 
@@ -502,7 +502,7 @@ class MainWindow(QMainWindow):
                             temp_arr = {}
                             names = [item['ITEM'] for item in shipment['DETAIL']]
                             search = {"filter": {"nomenclatureCodes": names}, "limit": len(names)}
-                            response = requests.post('https://ds-metadata.samokat.ru/products/by-filter', json=search)
+                            response = requests.post('https://ds-metadata-integration.samokat.io/products/by-filter', json=search)
                             response_json = response.json()
                             for item, name in zip(shipment['DETAIL'], names):
                                 if names.count(name) > 1:
@@ -661,15 +661,15 @@ class MainWindow(QMainWindow):
                     file_name = 'manual_shipments ' + str_current_datetime + '.json'
                     shipment_json = [{"shipmentId": "Вставить id перемещения",
                                       "documentNumber": "Вставить номер перемещения", "products": []}]
+                    products = [product for product in df['productId']]
+                    search_json = {"productIds": products}
+                    response = requests.post('https://ds-metadata-integration.samokat.io/products/by-ids', json=search_json)
+                    response_json = response.json()
                     for product, quantity, date_1, date_2 in zip(df['productId'], df['totalProductQuantity'],
                                                                  df['productionDate'], df['bestBeforeDate']):
-                        print(product, quantity, date_1, date_2)
                         date_1 = str(date_1).split(' ')[0] + "T00:00:00.00Z"
                         date_2 = str(date_2).split(' ')[0] + "T00:00:00.00Z"
-                        search_json = {"productIds": [product]}
-                        response = requests.post('https://ds-metadata.samokat.ru/products/by-ids', json=search_json)
-                        response_json = response.json()
-                        product_yt = response_json[0]['nomenclatureCode']
+                        product_yt = [p['nomenclatureCode'] for p in response_json if p['productId'] == product][0]
                         product_json = {
                             "productId": product,
                             "productCode": product_yt,

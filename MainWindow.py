@@ -539,7 +539,7 @@ class MainWindow(QMainWindow):
                                       "documentNumber": "Вставить номер перемещения", "products": []}]
                     products = [product for product in df['productId']]
                     search_json = {"productIds": products}
-                    response = requests.post('https://ds-metadata.samokat.ru/products/by-ids', json=search_json)
+                    response = requests.post('https://ds-metadata-integration.samokat.io/products/by-ids', json=search_json)
                     response_json = response.json()
                     count_YT = 0
                     for product, quantity, date_1, date_2 in zip(df['productId'], df['totalProductQuantity'],
@@ -572,6 +572,29 @@ class MainWindow(QMainWindow):
                     self.save_log('Готово, создан файл: ' + file_name)
                 except Exception:
                     self.save_log('Некорректный excel файл')
+
+    def start_test(self):
+        self.logs.clear()
+        vpn = self.vpn_on()
+        if vpn is True:
+            with open('token.json') as f:
+                token = json.load(f)
+            token = token['access_token']
+            header = {'Authorization': 'Bearer ' + token}
+            guids = self.plainTextEdit.toPlainText().split('\n')
+            str_current_datetime = str(datetime.now()).replace(':', '-')
+            file_name = 'receipts ' + str_current_datetime + '.json'
+            with open(file_name, 'w', encoding="utf-8") as f:
+                for guid in guids:
+                    search = {"orderId": guid}
+                    response = requests.get('https://smk-supportpaymentgw.samokat.ru/receipt/receipts/order', headers=header, params=search)
+                    response_json = response.json()
+                    for receipt in response_json['receipts']:
+                        if receipt['paymentOperationType'] == 'sell':
+                            url= receipt['ofdReceiptUrl']
+                            f.write(f'{url}\n')
+
+
 
     def start_app8(self):
         self.logs.clear()
@@ -607,7 +630,13 @@ class MainWindow(QMainWindow):
                                 count_showcases += 1
                             receipt = receipt.json()
                             if receipt == {"error": "NOT_FOUND", "value": None}:
-                                pass
+                                receipts_search = {"providerId": 2, "warehouseId": guid}
+                                receipt = requests.get(url_receipts, headers=header, params=receipts_search)
+                                receipt = receipt.json()
+                                if receipt == {"error": "NOT_FOUND", "value": None}:
+                                    pass
+                                else:
+                                    count_receipts += 1
                             else:
                                 count_receipts += 1
                             cfz_setting.append(showcase)

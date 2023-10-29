@@ -12,6 +12,7 @@ from dateutil.relativedelta import relativedelta
 import csv
 import sys
 from decimal import Decimal
+import numpy as np
 
 
 class MainWindow(QMainWindow):
@@ -32,7 +33,7 @@ class MainWindow(QMainWindow):
         self.start_2.clicked.connect(self.start_app2)
         self.start_3.clicked.connect(self.start_app3)
         self.start_4.clicked.connect(self.start_app4)
-        self.start_5.clicked.connect(self.start_app5)
+        self.start_5.clicked.connect(self.start_app5_test)
         self.start_6.clicked.connect(self.start_app6)
         self.start_7.clicked.connect(self.start_app7)
         self.start_8.clicked.connect(self.start_app8)
@@ -437,11 +438,13 @@ class MainWindow(QMainWindow):
                                                 valid_packages.append(True)
                                             else:
                                                 valid_packages.append(False)
+
                                     if True not in valid_packages:
                                         pack = {
                                             'packages': [package['name'].replace('\xa0', '') for package in packages]}
                                         item.update(pack)
                                         items.append(item)
+
                             for e in temp_arr:
                                 quantity = 0
                                 op_qty = 0
@@ -483,6 +486,100 @@ class MainWindow(QMainWindow):
                 except Exception:
                     self.save_log('Некорректный JSON или что-то пошло не так')
 
+    def start_app5_test(self):
+        path = self.show_input(self.label_44)
+        vpn = self.vpn_on()
+        if vpn:
+            if path == '':
+                self.save_log('Вы не выбрали файл')
+            else:
+                try:
+                    text = open(path, "r", encoding="utf-8")
+                    text = text.read().split('\n')
+                    result = []
+                    for js in text:
+                        jsons = json.loads(js)
+                        for shipment in jsons['SHIPMENTS']:
+                            items, temp, temp_arr = [], [], {}
+                            names = [item['ITEM'] for item in shipment['DETAIL']]
+                            res_slice, responses = [], {'data': []}
+                            for start in range(0, len(names), 2):
+                                stop = start + 200
+                                slice_object = slice(start, stop)
+                                res_slice.append(names[slice_object])
+                            for i in res_slice:
+                                search = {"filter": {"nomenclatureCodes": i}, "limit": len(i)}
+                                response = requests.post('https://ds-metadata.samokat.ru/products/by-filter',
+                                                         json=search)
+                                response_json = response.json()
+                                responses['data'].extend(response_json['data'])
+                            for item, name in zip(shipment['DETAIL'], names):
+                                if names.count(name) > 1:
+                                    print(item, name)
+                                    if name in [key for key, value in temp_arr.items()]:
+                                        temp_arr[name].append(item)
+                                    else:
+                                        temp_arr.update({name: [item]})
+                                else:
+                                    print(item, name)
+                                    valid_packages = []
+                                    packages = [i['packages'] for i in responses['data'] if i['nomenclatureCode'] == name][0]
+                                    for package in packages:
+                                        if package['packageType'] == item['OP_QTY_UM']:
+                                            quantity = Decimal(item['QUANTITY'].split('.')[0]).quantize(Decimal("1.00"))
+                                            op_qty = Decimal(item['OP_QTY'].split('.')[0]).quantize(Decimal("1.00"))
+                                            coefficient = package['coefficient']
+                                            if coefficient * op_qty == quantity:
+                                                valid_packages.append(True)
+                                            else:
+                                                valid_packages.append(False)
+
+                                    if True not in valid_packages:
+                                        pack = {
+                                            'packages': [package['name'].replace('\xa0', '') for package in packages]}
+                                        item.update(pack)
+                                        items.append(item)
+
+                            for e in temp_arr:
+                                quantity = 0
+                                op_qty = 0
+                                valid_packages = []
+                                packages = [i['packages'] for i in responses['data'] if i['nomenclatureCode'] == e][0]
+                                for i in temp_arr[e]:
+                                    quantity += Decimal(i['QUANTITY']).quantize(Decimal("1.00"))
+                                    op_qty += Decimal(i['OP_QTY']).quantize(Decimal("1.00"))
+                                    for package in packages:
+                                        if package['packageType'] == i['OP_QTY_UM']:
+                                            coefficient = package['coefficient']
+                                            if coefficient * op_qty == quantity:
+                                                valid_packages.append(True)
+                                            else:
+                                                valid_packages.append(False)
+                                if True not in valid_packages:
+                                    pack = {
+                                        'packages': [package['name'].replace('\xa0', '') for package in
+                                                     packages]}
+                                    temp_arr[e].append(pack)
+                                    items.append(temp_arr[e])
+                            for x in items:
+                                if x not in temp:
+                                    temp.append(x)
+                            items = temp
+                            result.append({shipment['SHIPMENT_ID']: items})
+                    for res in result:
+                        res = res[list(res.keys())[0]]
+                        print(res)
+                        print(len(res))
+                        res.insert(0,{'count': len(res)})
+                        print(res)
+                    print(result)
+                    str_current_datetime = str(datetime.now()).replace(':', '-')
+                    file_name = "shipment(YT) " + str_current_datetime + ".sql"
+                    with open(file_name, 'w', encoding="utf-8") as f:
+                        f.write(json.dumps(result, indent=4, ensure_ascii=False))
+                        self.save_log('Готово, создан файл: ' + file_name)
+                except Exception:
+                    self.save_log('Некорректный JSON или что-то пошло не так')
     def start_app6(self):
         path = self.show_input(self.label_46)
         if path == '':
@@ -539,7 +636,7 @@ class MainWindow(QMainWindow):
                                       "documentNumber": "Вставить номер перемещения", "products": []}]
                     products = [product for product in df['productId']]
                     search_json = {"productIds": products}
-                    response = requests.post('https://ds-metadata-integration.samokat.io/products/by-ids', json=search_json)
+                    response = requests.post('https://ds-metadata.samokat.io/products/by-ids', json=search_json)
                     response_json = response.json()
                     count_YT = 0
                     for product, quantity, date_1, date_2 in zip(df['productId'], df['totalProductQuantity'],
@@ -573,29 +670,6 @@ class MainWindow(QMainWindow):
                 except Exception:
                     self.save_log('Некорректный excel файл')
 
-    def start_test(self):
-        self.logs.clear()
-        vpn = self.vpn_on()
-        if vpn is True:
-            with open('token.json') as f:
-                token = json.load(f)
-            token = token['access_token']
-            header = {'Authorization': 'Bearer ' + token}
-            guids = self.plainTextEdit.toPlainText().split('\n')
-            str_current_datetime = str(datetime.now()).replace(':', '-')
-            file_name = 'receipts ' + str_current_datetime + '.json'
-            with open(file_name, 'w', encoding="utf-8") as f:
-                for guid in guids:
-                    search = {"orderId": guid}
-                    response = requests.get('https://smk-supportpaymentgw.samokat.ru/receipt/receipts/order', headers=header, params=search)
-                    response_json = response.json()
-                    for receipt in response_json['receipts']:
-                        if receipt['paymentOperationType'] == 'sell':
-                            url= receipt['ofdReceiptUrl']
-                            f.write(f'{url}\n')
-
-
-
     def start_app8(self):
         self.logs.clear()
         vpn = self.vpn_on()
@@ -610,7 +684,7 @@ class MainWindow(QMainWindow):
                 else:
                     self.save_log('Вы ввели ' + str(len(guids)) + ' guid ЦФЗ')
                     invalid_guids = []
-                    result = []
+                    result,datas = [], {}
                     count_showcases = 0
                     count_receipts = 0
                     for guid in guids:
@@ -642,6 +716,41 @@ class MainWindow(QMainWindow):
                             cfz_setting.append(showcase)
                             cfz_setting.append(receipt)
                             result.append({guid: cfz_setting})
+
+                            if self.checkBox_4.isChecked() is False:
+                                pass
+                            else:
+                                cfz = requests.get(f'https://ds-warehouse.samokat.ru/warehouses/load/by-id/{guid}')
+                                cfz = cfz.json()
+                                cfz = cfz['value']
+                                cityId = cfz['cityId']
+                                city = requests.get(f'https://ds-warehouse.samokat.ru/city/{cityId}')
+                                city = city.json()
+                                city = city['value']
+                                show, group_code, login, password = '', '', '', ''
+                                if showcase == {"items": []}:
+                                    pass
+                                else:
+                                    show = 'Экспресс'
+                                if receipt == {"error": "NOT_FOUND", "value": None}:
+                                    receipts_search = {"providerId": 2, "warehouseId": guid}
+                                    receipt = requests.get(url_receipts, headers=header, params=receipts_search)
+                                    receipt = receipt.json()
+                                    if receipt == {"error": "NOT_FOUND", "value": None}:
+                                        pass
+                                    else:
+                                        group_code = receipt['value']['cashRegisterGroup']
+                                        login = receipt['value']['login']
+                                        password = receipt['value']['password']
+                                else:
+                                    group_code = receipt['value']['cashRegisterGroup']
+                                    login = receipt['value']['login']
+                                    password = receipt['value']['password']
+
+                                data = [cfz['name'], cfz['startedToOperate'].split('T')[0], cfz['warehouseId'],
+                                        cfz['email'], city['code'], cfz['address']['lat'], cfz['address']['lon'],
+                                        cfz['address']['fullAddress'], show, group_code, login, password]
+                                datas[guid] = data
                         else:
                             invalid_guids.append(guid)
                     if invalid_guids == [] or invalid_guids == ['']:
@@ -656,5 +765,14 @@ class MainWindow(QMainWindow):
                         f.write(f'Кол-во касс: {count_receipts}\n')
                         f.write(json.dumps(result, indent=4, ensure_ascii=False))
                     self.save_log('Готово, создан файл: ' + file_name)
+                    if self.checkBox_4.isChecked() is True:
+                        df = pd.DataFrame(datas)
+                        print(df)
+                        file_name2 = 'cfz_settings ' + str_current_datetime + '.xlsx'
+                        writer = pd.ExcelWriter(file_name2)
+                        df.to_excel(writer, index=False, header=False)
+                        writer.close()
+                        self.save_log('Готово, создан файл: ' + file_name2)
+
             except Exception:
                 self.save_log('Вы не авторизовались')

@@ -636,7 +636,7 @@ class MainWindow(QMainWindow):
                                       "documentNumber": "Вставить номер перемещения", "products": []}]
                     products = [product for product in df['productId']]
                     search_json = {"productIds": products}
-                    response = requests.post('https://ds-metadata.samokat.io/products/by-ids', json=search_json)
+                    response = requests.post('https://ds-metadata.samokat.ru/products/by-ids', json=search_json)
                     response_json = response.json()
                     count_YT = 0
                     for product, quantity, date_1, date_2 in zip(df['productId'], df['totalProductQuantity'],

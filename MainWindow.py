@@ -1,5 +1,5 @@
 import requests
-from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtWidgets import QMainWindow, QFileDialog
 from PyQt5 import uic
 from AuthWindow import AuthWindow
 import json
@@ -12,7 +12,6 @@ from dateutil.relativedelta import relativedelta
 import csv
 import sys
 from decimal import Decimal
-import numpy as np
 
 
 class MainWindow(QMainWindow):
@@ -59,9 +58,8 @@ class MainWindow(QMainWindow):
     def path_file(self, label, label2=None, label3=None, filetype=0):
         self.logs.clear()
         self.save_log('Идёт чтение файла')
-        filetypes = [(('Excel', '*.xlsx'), ('Excel', '*.xls'), ('Excel', '*.xlsm')),
-                     (('txt', '*.txt'), ('csv', '*.csv'))]
-        path = filedialog.askopenfilename(title='Выбрать файл', initialdir='', filetypes=filetypes[filetype])
+        filetypes = [("Excel (*.xlsx *.xls *.xlsm)"), ("txt (*.txt)"), ("csv (*.csv)")]
+        path = QFileDialog.getOpenFileName(self, 'Выбрать файл', '',filetypes[filetype])[0]
         file_name = os.path.basename(path)
         if path == "":
             self.logs.clear()

@@ -5,13 +5,14 @@ from AuthWindow import AuthWindow
 import json
 import os
 from datetime import datetime, date
-from tkinter import filedialog
 from openpyxl import load_workbook
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 import csv
 import sys
 from decimal import Decimal
+import psycopg2
+from psycopg2 import Error
 
 
 class MainWindow(QMainWindow):
@@ -32,10 +33,10 @@ class MainWindow(QMainWindow):
         self.start_2.clicked.connect(self.start_app2)
         self.start_3.clicked.connect(self.start_app3)
         self.start_4.clicked.connect(self.start_app4)
-        self.start_5.clicked.connect(self.start_app5_test)
+        self.start_5.clicked.connect(self.start_app5)
         self.start_6.clicked.connect(self.start_app6)
         self.start_7.clicked.connect(self.start_app7)
-        self.start_8.clicked.connect(self.start_app8)
+        self.start_8.clicked.connect(self.start_test)
         # Надо использовать QtWidget.setToolTip('text')
 
     def create_window(self):
@@ -397,94 +398,8 @@ class MainWindow(QMainWindow):
         except Exception:
             self.save_log('Что-то пошло не так')
 
+
     def start_app5(self):
-        path = self.show_input(self.label_44)
-        vpn = self.vpn_on()
-        if vpn:
-            if path == '':
-                self.save_log('Вы не выбрали файл')
-            else:
-                try:
-                    text = open(path, "r", encoding="utf-8")
-                    text = text.read().split('\n')
-                    result = []
-                    for js in text:
-                        jsons = json.loads(js)
-                        for shipment in jsons['SHIPMENTS']:
-                            items = []
-                            temp = []
-                            temp_arr = {}
-                            names = [item['ITEM'] for item in shipment['DETAIL']]
-                            search = {"filter": {"nomenclatureCodes": names}, "limit": len(names)}
-                            response = requests.post('https://ds-metadata.samokat.ru/products/by-filter', json=search)
-                            response_json = response.json()
-                            for item, name in zip(shipment['DETAIL'], names):
-                                if names.count(name) > 1:
-                                    if name in [key for key, value in temp_arr.items()]:
-                                        temp_arr[name].append(item)
-                                    else:
-                                        temp_arr.update({name: [item]})
-                                else:
-                                    valid_packages = []
-                                    packages = [i['packages'] for i in response_json['data'] if i['nomenclatureCode'] == name][0]
-                                    for package in packages:
-                                        if package['packageType'] == item['OP_QTY_UM']:
-                                            quantity = Decimal(item['QUANTITY'].split('.')[0]).quantize(Decimal("1.00"))
-                                            op_qty = Decimal(item['OP_QTY'].split('.')[0]).quantize(Decimal("1.00"))
-                                            coefficient = package['coefficient']
-                                            if coefficient * op_qty == quantity:
-                                                valid_packages.append(True)
-                                            else:
-                                                valid_packages.append(False)
-
-                                    if True not in valid_packages:
-                                        pack = {
-                                            'packages': [package['name'].replace('\xa0', '') for package in packages]}
-                                        item.update(pack)
-                                        items.append(item)
-
-                            for e in temp_arr:
-                                quantity = 0
-                                op_qty = 0
-                                valid_packages = []
-                                packages = [i['packages'] for i in response_json['data'] if i['nomenclatureCode'] == e][0]
-                                for i in temp_arr[e]:
-                                    quantity += Decimal(i['QUANTITY']).quantize(Decimal("1.00"))
-                                    op_qty += Decimal(i['OP_QTY']).quantize(Decimal("1.00"))
-                                    for package in packages:
-                                        if package['packageType'] == i['OP_QTY_UM']:
-                                            coefficient = package['coefficient']
-                                            if coefficient * op_qty == quantity:
-                                                valid_packages.append(True)
-                                            else:
-                                                valid_packages.append(False)
-                                if True not in valid_packages:
-                                    pack = {
-                                        'packages': [package['name'].replace('\xa0', '') for package in
-                                                     packages]}
-                                    temp_arr[e].append(pack)
-                                    items.append(temp_arr[e])
-                            for x in items:
-                                if x not in temp:
-                                    temp.append(x)
-                            items = temp
-                            result.append({shipment['SHIPMENT_ID']: items})
-                    for res in result:
-                        res = res[list(res.keys())[0]]
-                        print(res)
-                        print(len(res))
-                        res.insert(0,{'count': len(res)})
-                        print(res)
-                    print(result)
-                    str_current_datetime = str(datetime.now()).replace(':', '-')
-                    file_name = "shipment(YT) " + str_current_datetime + ".sql"
-                    with open(file_name, 'w', encoding="utf-8") as f:
-                        f.write(json.dumps(result, indent=4, ensure_ascii=False))
-                        self.save_log('Готово, создан файл: ' + file_name)
-                except Exception:
-                    self.save_log('Некорректный JSON или что-то пошло не так')
-
-    def start_app5_test(self):
         path = self.show_input(self.label_44)
         vpn = self.vpn_on()
         if vpn:
@@ -774,3 +689,101 @@ class MainWindow(QMainWindow):
 
             except Exception:
                 self.save_log('Вы не авторизовались')
+    def start_test(self):
+        try:
+            order_id = self.plainTextEdit.toPlainText().split('\n')
+            if order_id == ['']:
+                self.save_log('Вы не ввели order id')
+            else:
+                order_id.remove('')
+                order_id = tuple(order_id)
+                with open('cred.json') as f:
+                    cred = json.load(f)
+                login = cred['username']
+                password = cred['password']
+                connection = psycopg2.connect(user=login,
+                                              password=password,
+                                              host="patroni-17.samokat.io",
+                                              port="5434",
+                                              dbname="order_history")
+                cursor = connection.cursor()
+                cursor.execute(f'WITH orders AS (SELECT order_id, order_line_changed  FROM order_history WHERE order_id in {order_id}), date_created AS (SELECT change_date as created_date, order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 3), date_picking AS (SELECT change_date as picking_date, order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 4), date_picking_hub AS (SELECT change_date as picking_date_hub, order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 9), date_picked AS (SELECT change_date as picked_date,order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 5), date_picked_hub AS (SELECT change_date as picked_date_hub,order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 10), date_change AS (SELECT created_date_time as change_date, order_id FROM order_change WHERE order_id in (SELECT order_id FROM orders)), hub_picker AS (SELECT order_id, picker_id FROM distribution_center_picking_info WHERE order_id in (SELECT order_id FROM orders)), cfz_picker AS (SELECT order_id, picker_uuid FROM picking_info WHERE order_id in (SELECT order_id FROM orders)), cfz_deliveryman AS (SELECT order_id, deliveryman_uuid FROM delivery_info WHERE order_id in (SELECT order_id FROM orders)), order_number AS (SELECT order_id, display_number FROM order_history WHERE order_id in (SELECT order_id FROM orders)), product AS (SELECT oc.created_date_time as change_dates, olc.product_id FROM order_change oc JOIN order_line_change olc ON olc.order_change_id = oc.id WHERE oc.order_id in (SELECT order_id FROM orders)) SELECT order_number.display_number AS "Номер заказа", date_created.order_id, CASE WHEN change_date < picking_date_hub THEN true WHEN change_date < picking_date and picking_date_hub is NULL THEN true WHEN change_date is NULL and order_line_changed = true THEN true WHEN change_date is not NULL and order_line_changed = true and picking_date_hub is NULL and picking_date is NULL THEN true ELSE false END "Автокорректировка", CASE WHEN change_date > picking_date_hub and change_date < picked_date_hub THEN true ELSE false END "Сборка на Хабе", hub_picker.picker_id, CASE WHEN change_date > picking_date and change_date < picked_date and picking_date_hub is NULL THEN true ELSE false END "Сборка на ЦФЗ", cfz_picker.picker_uuid, CASE WHEN change_date > picked_date THEN true ELSE false END "Доставка", cfz_deliveryman.deliveryman_uuid, product.product_id AS "Продукт" FROM date_created LEFT JOIN date_picking ON date_created.order_id = date_picking.order_id LEFT JOIN date_picking_hub ON date_picking_hub.order_id = date_created.order_id LEFT JOIN date_picked ON date_created.order_id = date_picked.order_id LEFT JOIN date_picked_hub ON date_picked_hub.order_id = date_created.order_id LEFT JOIN date_change ON date_change.order_id = date_created.order_id LEFT JOIN orders ON orders.order_id = date_created.order_id LEFT JOIN hub_picker ON hub_picker.order_id = date_created.order_id LEFT JOIN cfz_picker ON cfz_picker.order_id = date_created.order_id LEFT JOIN cfz_deliveryman ON cfz_deliveryman.order_id = date_created.order_id LEFT JOIN product ON product.change_dates = date_change.change_date LEFT JOIN order_number ON order_number.order_id = date_created.order_id GROUP BY date_created.order_id, "Автокорректировка", "Сборка на Хабе","Сборка на ЦФЗ", "Доставка", hub_picker.picker_id, cfz_picker.picker_uuid,cfz_deliveryman.deliveryman_uuid, "Продукт", "Номер заказа" ORDER BY date_created.order_id ASC')
+                result = []
+                result.extend(cursor.fetchall())
+                df = pd.DataFrame(result)
+                type_update = []
+                for a,b,c,d in zip(df[2].tolist(),df[3].tolist(),df[5].tolist(),df[7].tolist()):
+                    if a is True:
+                        type_update.append('Автокорректировка')
+                    if b is True:
+                        type_update.append('Ручная(Сборка на ХАБе)')
+                    if c is True:
+                        type_update.append('Ручная(Сборка на ЦФЗ)')
+                    if d is True:
+                        type_update.append('Ручная(На этапе доставки)')
+
+                result = {'Номер заказа': df[0].tolist(), 'order_id': df[1].tolist(), 'Тип корректировки': type_update, 'product_id': df[9].tolist()}
+                res = pd.DataFrame(result)
+                who = []
+                for type, uuid1, uuid2, uuid3 in zip(res['Тип корректировки'].tolist(), df[4].tolist(), df[6].tolist(), df[8].tolist()):
+                    if type == 'Автокорректировка':
+                        who.append('')
+                    if type == 'Ручная(Сборка на ХАБе)':
+                        who.append(uuid1)
+                    if type == 'Ручная(Сборка на ЦФЗ)':
+                        who.append(uuid2)
+                    if type == 'Ручная(На этапе доставки)':
+                        who.append(uuid3)
+                result = {'Номер заказа': df[0].tolist(), 'order_id': df[1].tolist(), 'Тип корректировки': type_update,
+                          'Кто скорректировал': who, 'product_id': df[9].tolist()}
+                res = pd.DataFrame(result)
+                connection1 = psycopg2.connect(user=login,
+                                              password=password,
+                                              host="patroni-06.samokat.io",
+                                              port="5434",
+                                              dbname="employee_profiles_backend")
+                cursor1 = connection1.cursor()
+                profile_id = tuple(list(filter(None, res['Кто скорректировал'].values)))
+                employees = []
+                if profile_id == ():
+                    pass
+                if len(profile_id) == 1:
+                    profile_id = profile_id[0]
+                    cursor1.execute(f"SELECT profile_id, full_name FROM profile WHERE profile_id = '{profile_id}'")
+                    employees.extend(cursor1.fetchall())
+                else:
+                    cursor1.execute(f'SELECT profile_id, full_name FROM profile WHERE profile_id in {profile_id}')
+                    employees.extend(cursor1.fetchall())
+                who = res['Кто скорректировал'].to_list()
+                print(who)
+                who_update = []
+                for id in who:
+                    for employee in employees:
+                        if id == employee[0]:
+                            who_update.append(employee[1])
+                        if id == '':
+                            who_update.append('')
+                products = [i for i in df[9].values]
+                search_json = {"productIds": products}
+                response = requests.post('https://ds-metadata.samokat.ru/products/by-ids', json=search_json)
+                response_json = response.json()
+                products_name = []
+                for id in df[9].tolist():
+                    for product in response_json:
+                        if id == product['productId']:
+                            products_name.append(product['administrativeName'])
+                print(products_name)
+                print(who_update)
+                print(type_update)
+                result = {'Номер заказа': df[0].tolist(), 'order_id': df[1].tolist(), 'Тип корректировки': type_update,
+                          'Кто скорректировал': who_update, 'product_id': df[9].tolist(), 'Продукт': products_name}
+                print(result)
+                res = pd.DataFrame(result)
+                str_current_datetime = str(datetime.now()).replace(':', '-')
+                file_name = 'Отчет по корректировкам ' + str_current_datetime + '.xlsx'
+                writer = pd.ExcelWriter(file_name)
+                res.to_excel(writer, index=False)
+                writer.close()
+                self.save_log('Готово, создан файл: ' + file_name)
+        except (Exception, Error) as error:
+            print("Ошибка при работе с PostgreSQL", error)

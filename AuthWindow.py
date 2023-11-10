@@ -56,3 +56,6 @@ class AuthWindow(QDialog):
                 self.save_log('Вы успешно авторизовались')
                 with open('token.json', 'w', encoding="utf-8") as f:
                     f.write(json.dumps(token, indent=4, ensure_ascii=False))
+                with open('cred.json', 'w', encoding="utf-8") as f:
+                    f.write(json.dumps(data, indent=4, ensure_ascii=False))
+

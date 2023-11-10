@@ -3,7 +3,7 @@
 block_cipher = None
 
 a = Analysis(['main.py'],
-             pathex=['C:/Users/defuziq/PycharmProjects/pythonProject'],
+             pathex=['C:/Users/defuz/PycharmProjects/pythonProject'],
              binaries=[],
              datas=[('static/*.png', 'static'),
              ('static/*.ui', 'static'),
@@ -31,4 +31,4 @@ exe = EXE(pyz,
           upx=True,
           upx_exclude=[],
           runtime_tmpdir=None,
-          console=False, icon='C:/Users/defuziq/PycharmProjects/pythonProject/static/icon.ico')
+          console=False, icon='C:/Users/defuz/PycharmProjects/pythonProject/static/icon.ico')

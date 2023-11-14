@@ -4,6 +4,7 @@ import json
 import sys
 import os
 from PyQt5 import uic
+from sqlitedict import SqliteDict
 
 class AuthWindow(QDialog):
     def __init__(self, parent):
@@ -11,6 +12,10 @@ class AuthWindow(QDialog):
         auth_path = self.resource_path('static/auth.ui')
         uic.loadUi(auth_path, self)
         self.pushButton.clicked.connect(self.authorization)
+        login = Cache.load("login")
+        password = Cache.load("password")
+        self.lineEdit.setText(login)
+        self.lineEdit_2.setText(password)
 
     @staticmethod
     def resource_path(relative_path):
@@ -43,19 +48,37 @@ class AuthWindow(QDialog):
                                      'oauth/tokenByPassword', data=data)
             token = response.json()
             if token == {'code': 'INVALID_CREDENTIALS', 'message': 'Invalid credentials'}:
-                print(token)
                 self.logs.setStyleSheet("color: red;")
                 self.save_log('Вы ввели неправильный логин или пароль')
             elif token == {'code': 'INTERNAL_SERVER_ERROR', 'message': 'Read timed out executing POST https://idm-auth-employee.samokat.ru/oauth/tokenByPassword'}:
-                print(token)
                 self.logs.setStyleSheet("color: red;")
                 self.save_log('Не успешно, попробуйте еще раз')
             else:
-                print(token)
+                if Cache.load("login") is None:
+                    Cache.save("login", username)
+                    Cache.save("password", password)
                 self.logs.setStyleSheet("color: green;")
                 self.save_log('Вы успешно авторизовались')
-                with open('token.json', 'w', encoding="utf-8") as f:
-                    f.write(json.dumps(token, indent=4, ensure_ascii=False))
-                with open('cred.json', 'w', encoding="utf-8") as f:
-                    f.write(json.dumps(data, indent=4, ensure_ascii=False))
+                token = token['access_token']
+                Cache.save("token", token)
 
+
+class Cache():
+    def __init__(self, param):
+        self.param = param
+
+    def save(key, value, cache_file="cache.sqlite3"):
+        try:
+            with SqliteDict(cache_file) as mydict:
+                mydict[key] = value  # Using dict[key] to store
+                mydict.commit()  # Need to commit() to actually flush the data
+        except Exception as ex:
+            print("Error during storing data (Possibly unsupported):", ex)
+
+    def load(key, cache_file="cache.sqlite3"):
+        try:
+            with SqliteDict(cache_file) as mydict:
+                value = mydict[key]  # No need to use commit(), since we are only loading data!
+            return value
+        except Exception as ex:
+            return None

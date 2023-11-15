@@ -38,6 +38,7 @@ class MainWindow(QMainWindow):
         self.start_8.clicked.connect(self.start_app11)
         self.start_9.clicked.connect(self.start_app9)
         self.start_10.clicked.connect(self.start_app10)
+        self.start_11.clicked.connect(self.start_app11)
         # Надо использовать QtWidget.setToolTip('text')
 
     def create_window(self):
@@ -899,11 +900,11 @@ class MainWindow(QMainWindow):
         vpn = self.vpn_on()
         if vpn is True:
             try:
-                token = Cache.load("token")
-                find_feature =  self.plainTextEdit.toPlainText()
-                guids = self.plainTextEdit.toPlainText().split('\n')
+                find_feature =  self.plainTextEdit_4.toPlainText()
+                guids = self.plainTextEdit_5.toPlainText().split('\n')
                 invalid_guids, features_enabled, features_disabled = [], [], []
-                if guids == ['']:
+                guids.remove('')
+                if len(guids) == 0:
                     self.save_log('Вы не ввели guid ЦФЗ')
                 else:
                     self.save_log('Вы ввели ' + str(len(guids)) + ' guid ЦФЗ')
@@ -915,10 +916,29 @@ class MainWindow(QMainWindow):
                             features = cfz['value']['features']
                             print(features)
                             if find_feature in features:
-                                find_feature.append(guid)
-                            el
+                                features_enabled.append(guid)
+                            else:
+                                features_disabled.append(guid)
                         else:
                             invalid_guids.append(guid)
+
+                    count_enabled = len(features_enabled)
+                    count_disabled = len(features_disabled)
+                    str_current_datetime = str(datetime.now()).replace(':', '-')
+                    file_name = 'cfz_feature ' + str_current_datetime + '.json'
+                    with open(file_name, 'w', encoding="utf-8") as f:
+                        f.write(f'Фича - {find_feature}\n')
+                        f.write(f'Включена на : {count_enabled} ЦФЗ\n')
+                        for fe in features_enabled:
+                            f.write(f'{fe}\n')
+                        f.write(f'Выключена на : {count_disabled} ЦФЗ\n')
+                        for fd in features_disabled:
+                            f.write(f'{fd}\n')
+                        if len(invalid_guids) > 0:
+                            f.write(f'Некорректные guid:\n')
+                            for invalid in invalid_guids:
+                                f.write(invalid)
+                    self.save_log('Готово, создан файл: ' + file_name)
 
 
             except Exception:

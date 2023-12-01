@@ -4,12 +4,13 @@ from PyQt5 import uic
 from AuthWindow import AuthWindow, Cache
 import json
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from openpyxl import load_workbook
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 import csv
 import sys
+import xlwings as xw
 from decimal import Decimal
 import psycopg2
 from psycopg2 import Error
@@ -701,7 +702,7 @@ class MainWindow(QMainWindow):
             else:
                 if '' in order_id:
                     order_id.remove('')
-                order_id = tuple(order_id)
+                order_id = (','.join(["'" + i + "'" for i in order_id]))
                 login = Cache.load("login")
                 password = Cache.load("password")
                 if login is None:
@@ -713,13 +714,12 @@ class MainWindow(QMainWindow):
                                                   port="5434",
                                                   dbname="order_history")
                     cursor = connection.cursor()
-                    print(cursor)
-                    cursor.execute(f'WITH orders AS (SELECT order_id, order_line_changed  FROM order_history WHERE order_id in {order_id}), date_created AS (SELECT change_date as created_date, order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 3), date_picking AS (SELECT change_date as picking_date, order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 4), date_picking_hub AS (SELECT change_date as picking_date_hub, order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 9), date_picked AS (SELECT change_date as picked_date,order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 5), date_picked_hub AS (SELECT change_date as picked_date_hub,order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 10), date_change AS (SELECT created_date_time as change_date, order_id FROM order_change WHERE order_id in (SELECT order_id FROM orders)), hub_picker AS (SELECT order_id, picker_id FROM distribution_center_picking_info WHERE order_id in (SELECT order_id FROM orders)), cfz_picker AS (SELECT order_id, picker_uuid FROM picking_info WHERE order_id in (SELECT order_id FROM orders)), cfz_deliveryman AS (SELECT order_id, deliveryman_uuid FROM delivery_info WHERE order_id in (SELECT order_id FROM orders)), order_number AS (SELECT order_id, display_number FROM order_history WHERE order_id in (SELECT order_id FROM orders)), product AS (SELECT oc.created_date_time as change_dates, olc.product_id FROM order_change oc JOIN order_line_change olc ON olc.order_change_id = oc.id WHERE oc.order_id in (SELECT order_id FROM orders)), accepted AS(SELECT order_id, product_id, quantity FROM order_line ol JOIN accepted_order_line aol ON aol.order_line_id = ol.id WHERE aol.order_id in (SELECT order_id FROM orders)), actual AS(SELECT order_id, product_id, quantity FROM order_line ol JOIN actual_order_line aol ON aol.order_line_id = ol.id WHERE aol.order_id in (SELECT order_id FROM orders)), changes AS(SELECT accepted.order_id, accepted.product_id, CASE WHEN accepted.quantity > actual.quantity THEN true ELSE false END AS change FROM accepted JOIN actual ON actual.product_id = accepted.product_id and actual.order_id = accepted.order_id), changes_2 AS (SELECT order_id, product_id FROM changes WHERE change is true), result AS(SELECT order_number.display_number AS "Номер заказа", date_created.order_id, CASE WHEN change_date < picking_date_hub THEN true WHEN change_date < picking_date and picking_date_hub is NULL THEN true WHEN change_date is NULL and order_line_changed = true THEN true WHEN change_date is not NULL and order_line_changed = true and picking_date_hub is NULL and picking_date is NULL THEN true ELSE false END "Автокорректировка", CASE WHEN change_date > picking_date_hub and change_date < picked_date_hub THEN true ELSE false END "Сборка на Хабе", hub_picker.picker_id, CASE WHEN change_date > picking_date and change_date < picked_date and picking_date_hub is NULL THEN true ELSE false END "Сборка на ЦФЗ", cfz_picker.picker_uuid, CASE WHEN change_date > picked_date THEN true ELSE false END "Доставка", cfz_deliveryman.deliveryman_uuid, product.product_id AS "Продукт", changes_2.product_id AS "Продукт2" FROM date_created LEFT JOIN date_picking ON date_created.order_id = date_picking.order_id LEFT JOIN date_picking_hub ON date_picking_hub.order_id = date_created.order_id LEFT JOIN date_picked ON date_created.order_id = date_picked.order_id LEFT JOIN date_picked_hub ON date_picked_hub.order_id = date_created.order_id LEFT JOIN date_change ON date_change.order_id = date_created.order_id LEFT JOIN orders ON orders.order_id = date_created.order_id LEFT JOIN hub_picker ON hub_picker.order_id = date_created.order_id LEFT JOIN cfz_picker ON cfz_picker.order_id = date_created.order_id LEFT JOIN cfz_deliveryman ON cfz_deliveryman.order_id = date_created.order_id LEFT JOIN product ON product.change_dates = date_change.change_date LEFT JOIN order_number ON order_number.order_id = date_created.order_id LEFT JOIN changes_2 ON changes_2.order_id = date_created.order_id GROUP BY date_created.order_id, "Автокорректировка", "Сборка на Хабе","Сборка на ЦФЗ", "Доставка", hub_picker.picker_id, cfz_picker.picker_uuid,cfz_deliveryman.deliveryman_uuid, "Продукт", "Номер заказа", "Продукт2" ORDER BY date_created.order_id ASC, "Сборка на Хабе" DESC) SELECT "Номер заказа", order_id, "Автокорректировка", "Сборка на Хабе", picker_id, "Сборка на ЦФЗ", picker_uuid, "Доставка", deliveryman_uuid, CASE  WHEN "Автокорректировка" is true and "Продукт2" is NULL THEN "Продукт" WHEN "Автокорректировка" is true and "Продукт2" is not NULL THEN "Продукт2" WHEN "Автокорректировка" is false THEN "Продукт" END "Продукт" FROM result')
+                    cursor.execute(f'WITH orders AS (SELECT order_id, order_line_changed  FROM order_history WHERE order_id in ({order_id})), date_created AS (SELECT change_date as created_date, order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 3), date_picking AS (SELECT change_date as picking_date, order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 4), date_picking_hub AS (SELECT change_date as picking_date_hub, order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 9), date_picked AS (SELECT change_date as picked_date,order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 5), date_picked_hub AS (SELECT change_date as picked_date_hub,order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 10), date_change AS (SELECT created_date_time as change_date, order_id FROM order_change WHERE order_id in (SELECT order_id FROM orders)), hub_picker AS (SELECT order_id, picker_id FROM distribution_center_picking_info WHERE order_id in (SELECT order_id FROM orders)), cfz_picker AS (SELECT order_id, picker_uuid FROM picking_info WHERE order_id in (SELECT order_id FROM orders)), cfz_deliveryman AS (SELECT order_id, deliveryman_uuid FROM delivery_info WHERE order_id in (SELECT order_id FROM orders)), order_number AS (SELECT order_id, display_number FROM order_history WHERE order_id in (SELECT order_id FROM orders)), product AS (SELECT oc.created_date_time as change_dates, olc.product_id FROM order_change oc JOIN order_line_change olc ON olc.order_change_id = oc.id WHERE oc.order_id in (SELECT order_id FROM orders)), accepted AS(SELECT order_id, product_id, quantity FROM order_line ol JOIN accepted_order_line aol ON aol.order_line_id = ol.id WHERE aol.order_id in (SELECT order_id FROM orders)), actual AS(SELECT order_id, product_id, quantity FROM order_line ol JOIN actual_order_line aol ON aol.order_line_id = ol.id WHERE aol.order_id in (SELECT order_id FROM orders)), changes AS(SELECT accepted.order_id, accepted.product_id, CASE WHEN accepted.quantity > actual.quantity THEN true ELSE false END AS change FROM accepted JOIN actual ON actual.product_id = accepted.product_id and actual.order_id = accepted.order_id), changes_2 AS (SELECT order_id, product_id FROM changes WHERE change is true), result AS(SELECT order_number.display_number AS "Номер заказа", to_char(date_created.created_date, \'yyyy-mm-dd hh24:mi\') AS "Время заказа", date_created.order_id, CASE WHEN change_date < picking_date_hub THEN true WHEN change_date < picking_date and picking_date_hub is NULL THEN true WHEN change_date is NULL and order_line_changed = true THEN true WHEN change_date is not NULL and order_line_changed = true and picking_date_hub is NULL and picking_date is NULL THEN true ELSE false END "Автокорректировка", CASE WHEN change_date > picking_date_hub and change_date < picked_date_hub THEN true ELSE false END "Сборка на Хабе", hub_picker.picker_id, CASE WHEN change_date > picking_date and change_date < picked_date and picking_date_hub is NULL THEN true ELSE false END "Сборка на ЦФЗ", cfz_picker.picker_uuid, CASE WHEN change_date > picked_date THEN true ELSE false END "Доставка", cfz_deliveryman.deliveryman_uuid, product.product_id AS "Продукт", changes_2.product_id AS "Продукт2" FROM date_created LEFT JOIN date_picking ON date_created.order_id = date_picking.order_id LEFT JOIN date_picking_hub ON date_picking_hub.order_id = date_created.order_id LEFT JOIN date_picked ON date_created.order_id = date_picked.order_id LEFT JOIN date_picked_hub ON date_picked_hub.order_id = date_created.order_id LEFT JOIN date_change ON date_change.order_id = date_created.order_id LEFT JOIN orders ON orders.order_id = date_created.order_id LEFT JOIN hub_picker ON hub_picker.order_id = date_created.order_id LEFT JOIN cfz_picker ON cfz_picker.order_id = date_created.order_id LEFT JOIN cfz_deliveryman ON cfz_deliveryman.order_id = date_created.order_id LEFT JOIN product ON product.change_dates = date_change.change_date LEFT JOIN order_number ON order_number.order_id = date_created.order_id LEFT JOIN changes_2 ON changes_2.order_id = date_created.order_id GROUP BY "Время заказа", date_created.order_id, "Автокорректировка", "Сборка на Хабе","Сборка на ЦФЗ", "Доставка", hub_picker.picker_id, cfz_picker.picker_uuid,cfz_deliveryman.deliveryman_uuid, "Продукт", "Номер заказа", "Продукт2" ORDER BY date_created.order_id ASC, "Сборка на Хабе" DESC) SELECT "Номер заказа", "Время заказа", order_id, "Автокорректировка", "Сборка на Хабе", picker_id, "Сборка на ЦФЗ", picker_uuid, "Доставка", deliveryman_uuid, CASE  WHEN "Автокорректировка" is true and "Продукт2" is NULL THEN "Продукт" WHEN "Автокорректировка" is true and "Продукт2" is not NULL THEN "Продукт2" WHEN "Автокорректировка" is false THEN "Продукт" END "Продукт" FROM result')
                     result = []
                     result.extend(cursor.fetchall())
                     df = pd.DataFrame(result)
                     type_update = []
-                    for a,b,c,d in zip(df[2].tolist(),df[3].tolist(),df[5].tolist(),df[7].tolist()):
+                    for a,b,c,d in zip(df[3].tolist(),df[4].tolist(),df[6].tolist(),df[8].tolist()):
                         if a is True:
                             type_update.append('Автокорректировка')
                         if b is True:
@@ -729,10 +729,10 @@ class MainWindow(QMainWindow):
                         if d is True:
                             type_update.append('Ручная(На этапе доставки)')
 
-                    result = {'Номер заказа': df[0].tolist(), 'order_id': df[1].tolist(), 'Тип корректировки': type_update, 'product_id': df[9].tolist()}
+                    result = {'Номер заказа': df[0].tolist(), 'Время заказа': df[1].tolist(), 'order_id': df[2].tolist(), 'Тип корректировки': type_update, 'product_id': df[10].tolist()}
                     res = pd.DataFrame(result)
                     who = []
-                    for type, uuid1, uuid2, uuid3 in zip(res['Тип корректировки'].tolist(), df[4].tolist(), df[6].tolist(), df[8].tolist()):
+                    for type, uuid1, uuid2, uuid3 in zip(res['Тип корректировки'].tolist(), df[5].tolist(), df[7].tolist(), df[9].tolist()):
                         if type == 'Автокорректировка':
                             who.append('')
                         if type == 'Ручная(Сборка на ХАБе)':
@@ -741,8 +741,8 @@ class MainWindow(QMainWindow):
                             who.append(uuid2)
                         if type == 'Ручная(На этапе доставки)':
                             who.append(uuid3)
-                    result = {'Номер заказа': df[0].tolist(), 'order_id': df[1].tolist(), 'Тип корректировки': type_update,
-                              'Кто скорректировал': who, 'product_id': df[9].tolist()}
+                    result = {'Номер заказа': df[0].tolist(), 'Время заказа': df[1].tolist(), 'order_id': df[2].tolist(), 'Тип корректировки': type_update,
+                              'Кто скорректировал': who, 'product_id': df[10].tolist()}
                     res = pd.DataFrame(result)
                     connection1 = psycopg2.connect(user=login,
                                                   password=password,
@@ -770,25 +770,37 @@ class MainWindow(QMainWindow):
                                 who_update.append(employee[1])
                         if id == '':
                             who_update.append(id)
-                    products = [i for i in df[9].values]
-                    search_json = {"productIds": [i for i in df[9].values if i is not None]}
+                    products = [i for i in df[10].values]
+                    search_json = {"productIds": [i for i in df[10].values if i is not None]}
                     response = requests.post('https://ds-metadata.samokat.ru/products/by-ids', json=search_json)
                     response_json = response.json()
                     products_name = []
-                    for id in df[9].tolist():
+                    for id in df[10].tolist():
                         for product in response_json:
                             if id == product['productId']:
                                 products_name.append(product['administrativeName'])
                         if id is None:
                             products_name.append('')
-                    result = {'Номер заказа': df[0].tolist(), 'order_id': df[1].tolist(), 'Тип корректировки': type_update,
-                              'Кто скорректировал': who_update, 'product_id': df[9].tolist(), 'Продукт': products_name}
+                    result = {'Номер заказа': df[0].tolist(), 'Время заказа': df[1].tolist(),
+                              'order_id': df[2].tolist(), 'Тип корректировки': type_update,
+                              'Кто скорректировал': who_update, 'product_id': df[10].tolist(), 'Продукт': products_name}
                     res = pd.DataFrame(result)
                     str_current_datetime = str(datetime.now()).replace(':', '-')
                     file_name = 'Отчет по корректировкам ' + str_current_datetime + '.xlsx'
                     writer = pd.ExcelWriter(file_name)
                     res.to_excel(writer, index=False)
                     writer.close()
+                    wb = xw.Book(file_name)
+                    sheet = wb.sheets[0]
+                    sheet.range('A:A').column_width = 15
+                    sheet.range('B:B').column_width = 15
+                    sheet.range('C:C').column_width = 40
+                    sheet.range('D:D').column_width = 25
+                    sheet.range('E:E').column_width = 40
+                    sheet.range('F:F').column_width = 40
+                    sheet.range('G:G').column_width = 70
+                    wb.save()
+                    wb.close()
                     self.save_log('Готово, создан файл: ' + file_name)
         except (Exception, Error) as error:
             print("Ошибка при работе с PostgreSQL", error)
@@ -814,13 +826,29 @@ class MainWindow(QMainWindow):
                                                   port="5434",
                                                   dbname="order_history")
                     cursor = connection.cursor()
-                    query = f'WITH orders AS (SELECT order_id, order_line_changed  FROM order_history WHERE store_id = \'{store_id}\' and order_line_changed = true and created_date_time between \'{date}\' and \'{date2})\'), date_created AS (SELECT change_date as created_date, order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 3), date_picking AS (SELECT change_date as picking_date, order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 4), date_picking_hub AS (SELECT change_date as picking_date_hub, order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 9), date_picked AS (SELECT change_date as picked_date,order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 5), date_picked_hub AS (SELECT change_date as picked_date_hub,order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 10), date_change AS (SELECT created_date_time as change_date, order_id FROM order_change WHERE order_id in (SELECT order_id FROM orders)), hub_picker AS (SELECT order_id, picker_id FROM distribution_center_picking_info WHERE order_id in (SELECT order_id FROM orders)), cfz_picker AS (SELECT order_id, picker_uuid FROM picking_info WHERE order_id in (SELECT order_id FROM orders)), cfz_deliveryman AS (SELECT order_id, deliveryman_uuid FROM delivery_info WHERE order_id in (SELECT order_id FROM orders)), order_number AS (SELECT order_id, display_number FROM order_history WHERE order_id in (SELECT order_id FROM orders)), product AS (SELECT oc.created_date_time as change_dates, olc.product_id FROM order_change oc JOIN order_line_change olc ON olc.order_change_id = oc.id WHERE oc.order_id in (SELECT order_id FROM orders)), accepted AS(SELECT order_id, product_id, quantity FROM order_line ol JOIN accepted_order_line aol ON aol.order_line_id = ol.id WHERE aol.order_id in (SELECT order_id FROM orders)), actual AS(SELECT order_id, product_id, quantity FROM order_line ol JOIN actual_order_line aol ON aol.order_line_id = ol.id WHERE aol.order_id in (SELECT order_id FROM orders)), changes AS(SELECT accepted.order_id, accepted.product_id, CASE WHEN accepted.quantity > actual.quantity THEN true ELSE false END AS change FROM accepted JOIN actual ON actual.product_id = accepted.product_id and actual.order_id = accepted.order_id), changes_2 AS (SELECT order_id, product_id FROM changes WHERE change is true), result AS(SELECT order_number.display_number AS "Номер заказа", date_created.order_id, CASE WHEN change_date < picking_date_hub THEN true WHEN change_date < picking_date and picking_date_hub is NULL THEN true WHEN change_date is NULL and order_line_changed = true THEN true WHEN change_date is not NULL and order_line_changed = true and picking_date_hub is NULL and picking_date is NULL THEN true ELSE false END "Автокорректировка", CASE WHEN change_date > picking_date_hub and change_date < picked_date_hub THEN true ELSE false END "Сборка на Хабе", hub_picker.picker_id, CASE WHEN change_date > picking_date and change_date < picked_date and picking_date_hub is NULL THEN true ELSE false END "Сборка на ЦФЗ", cfz_picker.picker_uuid, CASE WHEN change_date > picked_date THEN true ELSE false END "Доставка", cfz_deliveryman.deliveryman_uuid, product.product_id AS "Продукт", changes_2.product_id AS "Продукт2" FROM date_created LEFT JOIN date_picking ON date_created.order_id = date_picking.order_id LEFT JOIN date_picking_hub ON date_picking_hub.order_id = date_created.order_id LEFT JOIN date_picked ON date_created.order_id = date_picked.order_id LEFT JOIN date_picked_hub ON date_picked_hub.order_id = date_created.order_id LEFT JOIN date_change ON date_change.order_id = date_created.order_id LEFT JOIN orders ON orders.order_id = date_created.order_id LEFT JOIN hub_picker ON hub_picker.order_id = date_created.order_id LEFT JOIN cfz_picker ON cfz_picker.order_id = date_created.order_id LEFT JOIN cfz_deliveryman ON cfz_deliveryman.order_id = date_created.order_id LEFT JOIN product ON product.change_dates = date_change.change_date LEFT JOIN order_number ON order_number.order_id = date_created.order_id LEFT JOIN changes_2 ON changes_2.order_id = date_created.order_id GROUP BY date_created.order_id, "Автокорректировка", "Сборка на Хабе","Сборка на ЦФЗ", "Доставка", hub_picker.picker_id, cfz_picker.picker_uuid,cfz_deliveryman.deliveryman_uuid, "Продукт", "Номер заказа", "Продукт2" ORDER BY date_created.order_id ASC, "Сборка на Хабе" DESC) SELECT "Номер заказа", order_id, "Автокорректировка", "Сборка на Хабе", picker_id, "Сборка на ЦФЗ", picker_uuid, "Доставка", deliveryman_uuid, CASE  WHEN "Автокорректировка" is true and "Продукт2" is NULL THEN "Продукт" WHEN "Автокорректировка" is true and "Продукт2" is not NULL THEN "Продукт2" WHEN "Автокорректировка" is false THEN "Продукт" END "Продукт" FROM result'
-                    cursor.execute(query)
+                    date = date.split(' ')
+                    if date[1] == '00:00:00':
+                        date[1] = '00:00:01'
+                    date = [date[0] + ' ' + date[1]]
+                    date2 = [date2]
+                    df = pd.DataFrame({
+                        'datefrom': date,
+                        'datetill': date2
+                    }).astype({'datefrom': 'datetime64', 'datetill': 'datetime64'})
+                    dfrom, dtill = df.at[0, 'datefrom'], df.at[0, 'datetill']
+                    df1 = pd.DataFrame({'date': pd.date_range(dfrom, dtill, freq='D', normalize=True)}).assign(
+                        datefrom=lambda x: x['date'])
+                    df1['datetill'] = df1.datefrom + pd.Timedelta(1, unit='d') - pd.Timedelta(1, unit='s')
+                    df1.at[df1.iloc[0].name, 'datefrom'], df1.at[df1.iloc[-1].name, 'datetill'] = dfrom, dtill
                     result = []
-                    result.extend(cursor.fetchall())
+                    for date1, date2 in zip(df1['datefrom'].tolist(), df1['datetill'].tolist()):
+                        query = f'WITH orders AS (SELECT order_id, order_line_changed  FROM order_history WHERE store_id = \'{store_id}\' and order_line_changed = true and created_date_time between \'{date1}\' and \'{date2})\'), date_created AS (SELECT change_date as created_date, order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 3), date_picking AS (SELECT change_date as picking_date, order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 4), date_picking_hub AS (SELECT change_date as picking_date_hub, order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 9), date_picked AS (SELECT change_date as picked_date,order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 5), date_picked_hub AS (SELECT change_date as picked_date_hub,order_id FROM order_status WHERE order_id in (SELECT order_id FROM orders) and order_status_id = 10), date_change AS (SELECT created_date_time as change_date, order_id FROM order_change WHERE order_id in (SELECT order_id FROM orders)), hub_picker AS (SELECT order_id, picker_id FROM distribution_center_picking_info WHERE order_id in (SELECT order_id FROM orders)), cfz_picker AS (SELECT order_id, picker_uuid FROM picking_info WHERE order_id in (SELECT order_id FROM orders)), cfz_deliveryman AS (SELECT order_id, deliveryman_uuid FROM delivery_info WHERE order_id in (SELECT order_id FROM orders)), order_number AS (SELECT order_id, display_number FROM order_history WHERE order_id in (SELECT order_id FROM orders)), product AS (SELECT oc.created_date_time as change_dates, olc.product_id FROM order_change oc JOIN order_line_change olc ON olc.order_change_id = oc.id WHERE oc.order_id in (SELECT order_id FROM orders)), accepted AS(SELECT order_id, product_id, quantity FROM order_line ol JOIN accepted_order_line aol ON aol.order_line_id = ol.id WHERE aol.order_id in (SELECT order_id FROM orders)), actual AS(SELECT order_id, product_id, quantity FROM order_line ol JOIN actual_order_line aol ON aol.order_line_id = ol.id WHERE aol.order_id in (SELECT order_id FROM orders)), changes AS(SELECT accepted.order_id, accepted.product_id, CASE WHEN accepted.quantity > actual.quantity THEN true ELSE false END AS change FROM accepted JOIN actual ON actual.product_id = accepted.product_id and actual.order_id = accepted.order_id), changes_2 AS (SELECT order_id, product_id FROM changes WHERE change is true), result AS(SELECT order_number.display_number AS "Номер заказа", to_char(date_created.created_date, \'yyyy-mm-dd hh24:mi\') AS "Время заказа", date_created.order_id, CASE WHEN change_date < picking_date_hub THEN true WHEN change_date < picking_date and picking_date_hub is NULL THEN true WHEN change_date is NULL and order_line_changed = true THEN true WHEN change_date is not NULL and order_line_changed = true and picking_date_hub is NULL and picking_date is NULL THEN true ELSE false END "Автокорректировка", CASE WHEN change_date > picking_date_hub and change_date < picked_date_hub THEN true ELSE false END "Сборка на Хабе", hub_picker.picker_id, CASE WHEN change_date > picking_date and change_date < picked_date and picking_date_hub is NULL THEN true ELSE false END "Сборка на ЦФЗ", cfz_picker.picker_uuid, CASE WHEN change_date > picked_date THEN true ELSE false END "Доставка", cfz_deliveryman.deliveryman_uuid, product.product_id AS "Продукт", changes_2.product_id AS "Продукт2" FROM date_created LEFT JOIN date_picking ON date_created.order_id = date_picking.order_id LEFT JOIN date_picking_hub ON date_picking_hub.order_id = date_created.order_id LEFT JOIN date_picked ON date_created.order_id = date_picked.order_id LEFT JOIN date_picked_hub ON date_picked_hub.order_id = date_created.order_id LEFT JOIN date_change ON date_change.order_id = date_created.order_id LEFT JOIN orders ON orders.order_id = date_created.order_id LEFT JOIN hub_picker ON hub_picker.order_id = date_created.order_id LEFT JOIN cfz_picker ON cfz_picker.order_id = date_created.order_id LEFT JOIN cfz_deliveryman ON cfz_deliveryman.order_id = date_created.order_id LEFT JOIN product ON product.change_dates = date_change.change_date LEFT JOIN order_number ON order_number.order_id = date_created.order_id LEFT JOIN changes_2 ON changes_2.order_id = date_created.order_id GROUP BY "Время заказа", date_created.order_id, "Автокорректировка", "Сборка на Хабе","Сборка на ЦФЗ", "Доставка", hub_picker.picker_id, cfz_picker.picker_uuid,cfz_deliveryman.deliveryman_uuid, "Продукт", "Номер заказа", "Продукт2" ORDER BY date_created.order_id ASC, "Сборка на Хабе" DESC) SELECT "Номер заказа", "Время заказа", order_id, "Автокорректировка", "Сборка на Хабе", picker_id, "Сборка на ЦФЗ", picker_uuid, "Доставка", deliveryman_uuid, CASE  WHEN "Автокорректировка" is true and "Продукт2" is NULL THEN "Продукт" WHEN "Автокорректировка" is true and "Продукт2" is not NULL THEN "Продукт2" WHEN "Автокорректировка" is false THEN "Продукт" END "Продукт" FROM result'
+                        cursor.execute(query)
+                        result.extend(cursor.fetchall())
                     df = pd.DataFrame(result)
+                    print(result)
                     type_update = []
-                    for a, b, c, d in zip(df[2].tolist(), df[3].tolist(), df[5].tolist(), df[7].tolist()):
+                    for a, b, c, d in zip(df[3].tolist(), df[4].tolist(), df[6].tolist(), df[8].tolist()):
                         if a is True:
                             type_update.append('Автокорректировка')
                         if b is True:
@@ -830,12 +858,13 @@ class MainWindow(QMainWindow):
                         if d is True:
                             type_update.append('Ручная(На этапе доставки)')
 
-                    result = {'Номер заказа': df[0].tolist(), 'order_id': df[1].tolist(), 'Тип корректировки': type_update,
-                              'product_id': df[9].tolist()}
+                    result = {'Номер заказа': df[0].tolist(), 'Время заказа': df[1].tolist(), 'order_id': df[2].tolist(), 'Тип корректировки': type_update,
+                              'product_id': df[10].tolist()}
                     res = pd.DataFrame(result)
+                    print(res)
                     who = []
-                    for type, uuid1, uuid2, uuid3 in zip(res['Тип корректировки'].tolist(), df[4].tolist(), df[6].tolist(),
-                                                         df[8].tolist()):
+                    for type, uuid1, uuid2, uuid3 in zip(res['Тип корректировки'].tolist(), df[5].tolist(), df[7].tolist(),
+                                                         df[9].tolist()):
                         if type == 'Автокорректировка':
                             who.append('')
                         if type == 'Ручная(Сборка на ХАБе)':
@@ -844,8 +873,8 @@ class MainWindow(QMainWindow):
                             who.append(uuid2)
                         if type == 'Ручная(На этапе доставки)':
                             who.append(uuid3)
-                    result = {'Номер заказа': df[0].tolist(), 'order_id': df[1].tolist(), 'Тип корректировки': type_update,
-                              'Кто скорректировал': who, 'product_id': df[9].tolist()}
+                    result = {'Номер заказа': df[0].tolist(), 'Время заказа': df[1].tolist(), 'order_id': df[2].tolist(), 'Тип корректировки': type_update,
+                              'Кто скорректировал': who, 'product_id': df[10].tolist()}
                     res = pd.DataFrame(result)
                     connection1 = psycopg2.connect(user=login,
                                                    password=password,
@@ -873,25 +902,36 @@ class MainWindow(QMainWindow):
                                 who_update.append(employee[1])
                         if id == '':
                             who_update.append(id)
-                    products = [i for i in df[9].values]
-                    search_json = {"productIds": [i for i in df[9].values if i is not None]}
+                    products = [i for i in df[10].values]
+                    search_json = {"productIds": [i for i in df[10].values if i is not None]}
                     response = requests.post('https://ds-metadata.samokat.ru/products/by-ids', json=search_json)
                     response_json = response.json()
                     products_name = []
-                    for id in df[9].tolist():
+                    for id in df[10].tolist():
                         for product in response_json:
                             if id == product['productId']:
                                 products_name.append(product['administrativeName'])
                         if id is None:
                             products_name.append('')
-                    result = {'Номер заказа': df[0].tolist(), 'order_id': df[1].tolist(), 'Тип корректировки': type_update,
-                              'Кто скорректировал': who_update, 'product_id': df[9].tolist(), 'Продукт': products_name}
+                    result = {'Номер заказа': df[0].tolist(), 'Время заказа': df[1].tolist(), 'order_id': df[2].tolist(), 'Тип корректировки': type_update,
+                              'Кто скорректировал': who_update, 'product_id': df[10].tolist(), 'Продукт': products_name}
                     res = pd.DataFrame(result)
                     str_current_datetime = str(datetime.now()).replace(':', '-')
                     file_name = 'Отчет по корректировкам ' + str_current_datetime + '.xlsx'
                     writer = pd.ExcelWriter(file_name)
                     res.to_excel(writer, index=False)
                     writer.close()
+                    wb = xw.Book(file_name)
+                    sheet = wb.sheets[0]
+                    sheet.range('A:A').column_width = 15
+                    sheet.range('B:B').column_width = 15
+                    sheet.range('C:C').column_width = 40
+                    sheet.range('D:D').column_width = 25
+                    sheet.range('E:E').column_width = 40
+                    sheet.range('F:F').column_width = 40
+                    sheet.range('G:G').column_width = 70
+                    wb.save()
+                    wb.close()
                     self.save_log('Готово, создан файл: ' + file_name)
         except (Exception, Error) as error:
             print("Ошибка при работе с PostgreSQL", error)

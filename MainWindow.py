@@ -14,6 +14,7 @@ import xlwings as xw
 from decimal import Decimal
 import psycopg2
 from psycopg2 import Error
+from openpyxl.utils import get_column_letter
 
 
 class MainWindow(QMainWindow):
@@ -887,7 +888,7 @@ class MainWindow(QMainWindow):
                                 if d is True:
                                     type_update.append('Ручная(На этапе доставки)')
 
-                            result = {'Номер заказа': df[0].tolist(), 'Время заказа': df[1].tolist(), 'order_id': df[2].tolist(), 'Тип корректировки': type_update,
+                            result = {'Номер заказа': df[0].tolist(), 'Время заказа (GMT +0)': df[1].tolist(), 'order_id': df[2].tolist(), 'Тип корректировки': type_update,
                                       'product_id': df[10].tolist()}
                             res = pd.DataFrame(result)
                             who = []
@@ -901,7 +902,7 @@ class MainWindow(QMainWindow):
                                     who.append(uuid2)
                                 if type == 'Ручная(На этапе доставки)':
                                     who.append(uuid3)
-                            result = {'Номер заказа': df[0].tolist(), 'Время заказа': df[1].tolist(), 'order_id': df[2].tolist(), 'Тип корректировки': type_update,
+                            result = {'Номер заказа': df[0].tolist(), 'Время заказа (GMT +0)': df[1].tolist(), 'order_id': df[2].tolist(), 'Тип корректировки': type_update,
                                       'Кто скорректировал': who, 'product_id': df[10].tolist()}
                             res = pd.DataFrame(result)
                             connection1 = psycopg2.connect(user=login,
@@ -940,25 +941,26 @@ class MainWindow(QMainWindow):
                                         products_name.append(product['administrativeName'])
                                 if id is None:
                                     products_name.append('')
-                            result = {'Номер заказа': df[0].tolist(), 'Время заказа': df[1].tolist(), 'order_id': df[2].tolist(), 'Тип корректировки': type_update,
+                            result = {'Номер заказа': df[0].tolist(), 'Время заказа (GMT +0)': df[1].tolist(), 'order_id': df[2].tolist(), 'Тип корректировки': type_update,
                                       'Кто скорректировал': who_update, 'product_id': df[10].tolist(), 'Продукт': products_name}
                             res = pd.DataFrame(result)
+                            res.sort_values(by='Время заказа (GMT +0)')
                             str_current_datetime = str(datetime.now()).replace(':', '-')
                             file_name = 'Отчет по корректировкам ' + str_current_datetime + '.xlsx'
                             writer = pd.ExcelWriter(file_name)
                             res.to_excel(writer, index=False)
                             writer.close()
-                            wb = xw.Book(file_name)
-                            sheet = wb.sheets[0]
-                            sheet.range('A:A').column_width = 15
-                            sheet.range('B:B').column_width = 15
-                            sheet.range('C:C').column_width = 40
-                            sheet.range('D:D').column_width = 25
-                            sheet.range('E:E').column_width = 40
-                            sheet.range('F:F').column_width = 40
-                            sheet.range('G:G').column_width = 70
-                            wb.save()
-                            wb.close()
+                            wb = load_workbook(file_name)
+                            ws = wb.active
+                            ws.column_dimensions['A'].width = 15
+                            ws.column_dimensions['B'].width = 25
+                            ws.column_dimensions['C'].width = 40
+                            ws.column_dimensions['D'].width = 30
+                            ws.column_dimensions['E'].width = 40
+                            ws.column_dimensions['F'].width = 40
+                            ws.column_dimensions['G'].width = 70
+                            wb.save(file_name)
+
                             self.save_log('Готово, создан файл: ' + file_name)
             except (Exception, Error) as error:
                 print("Ошибка при работе с PostgreSQL", error)
